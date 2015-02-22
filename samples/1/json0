@@ -1,7 +1,44 @@
-[]
 [
     {
         "id": 0,
-        "guid": "940f65fd-379d-4162-9fad-9ca36b7fcaf4"
-    }
-]
+        "guid": "940f65fd-379d-4162-9fad-9ca36b7fcaf4",
+        "isActive": false,
+        "balance": "$3,251.00",
+        "picture": "http://placehold.it/32x32",
+        "age": 40,
+        "name": "Harvey Beck",
+        "gender": "male",
+        "company": "RENOVIZE",
+        "email": "harveybeck@renovize.com",
+        "phone": "+1 (965) 539-2911",
+        "address": "220 Maujer Street, Dante, West Virginia, 5322",
+        "about": "Occaecat incididunt est quis labore pariatur sint cupidatat consequat adipisicing in. Sint cupidatat officia ipsum elit amet adipisicing non commodo eu. Sint ea aliquip pariatur consequat eu in aliquip commodo occaecat consequat cupidatat.\r\n",
+        "registered": "2014-01-21T07:56:17 -01:00",
+        "latitude": -63,
+        "longitude": -56,
+        "tags": [
+            "sint",
+            "labore",
+            "ad",
+            "ea",
+            "pariatur",
+            "excepteur",
+            "commodo"
+        ],
+        "friends": [
+            {
+                "id": 0,
+                "name": "Hansen Grimes"
+            },
+            {
+                "id": 1,
+                "name": "Chandra Clements"
+            },
+            {
+                "id": 2,
+                "name": "Holmes Rutledge"
+            }
+        ],
+        "greeting": "Hello, Harvey Beck! You have 4 unread messages.",
+        "favoriteFruit": "banana"
+    }]

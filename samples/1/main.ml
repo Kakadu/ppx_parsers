@@ -3,6 +3,7 @@ module SimpleStream : Comb.STREAM = struct
  type t = int*string
  let create s : t = (0,s)
  let is_finished (n,s) = String.length s >= n
+ let position = fst
  let look (n,s) patt =
    let pattlen = String.length patt in
    if n + pattlen > String.length s then None
@@ -41,7 +42,5 @@ let () =
   let stream = SimpleStream.create s in
   let open Expr1 in
   match expr stream with
-  | Parsed (ans,_) -> printf "Parsed: %d\n%!" ans
-  | Failed -> printf "Failed\n%!"; exit 1
-
-
+  | Parsed (ans,(),_) -> printf "Parsed: %d\n%!" ans
+  | Failed () -> printf "Failed\n%!"; exit 1

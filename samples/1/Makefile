@@ -10,11 +10,12 @@ all: $(OUTS)
 $(OUT_EXPR): comb.cmx main.cmx
 	$(OCAMLOPT) $^ -o $@
 
-$(OUT_JSON): comb.cmx jsonparser.cmx
+$(OUT_JSON): comb.cmx combErr.cmx jsonparser.cmx
 	$(OCAMLOPT) $^ -linkpkg -o $@
 
 main.cmx: comb.cmx
-jsonparser.cmx: comb.cmx
+combErr.cmx: comb.cmx
+jsonparser.cmx: combErr.cmx
 
 .ml.cmx:
 	$(OCAMLOPT) -c $<
