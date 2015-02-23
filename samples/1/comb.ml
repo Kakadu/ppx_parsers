@@ -10,6 +10,9 @@ module type STREAM = sig
    val position: t -> int
 end
 
+type associvity = [ `Lefta | `Righta | `Nona ]
+
+
 module type PARSERS = sig
     type stream
     type err
@@ -33,30 +36,38 @@ module type PARSERS = sig
     val listBy: 'a parser -> 'b parser -> 'a list parser
     val whitespaces: unit parser
 
+    val expr:  ('a parser -> 'a parser) ->
+               ([ `Lefta | `Nona | `Righta ] * ('oper parser * ('a -> 'a -> 'a)) list) array ->
+               'a parser -> 'a parser
 end
+
+
+let left f c x y = f (c x) y
+let right f c x y = f x y
 
 module Make(S: STREAM) : PARSERS with type stream = S.t and type err = unit =
 struct
   type stream = S.t
   type err = unit
   type 'a r = Parsed of 'a * err * stream | Failed of err
-  type 'a parser = S.t -> 'a r
+  type 'a parser = stream -> 'a r
 
   let const x _ = x
   let map_result f = function Parsed (x, (), s) -> Parsed (f x, (), s) | Failed () -> Failed ()
   let look str t =
     match S.look t str with
-    | Some t -> printf "look '%s' succeeded\n%!" str; Parsed (str, (), t)
-    | None -> printf "look '%s' failed\n%!" str; Failed ()
+    | Some t -> Parsed (str, (), t)
+    | None   -> Failed ()
 
   let (<|>) l r s =
     match l s with
     | (Parsed (_,_,_)) as ans -> ans
     | Failed () -> r s
 
+  let alt = (<|>)
   let alt_list : 'a parser list -> 'a parser = function
     | []    -> failwith "alt_list can't accpet empty list"
-    | x::xs ->  List.fold_left (<|>) x xs
+    | x::xs -> List.fold_left (<|>) x xs
 
   let (-->) p f s = match p s with Parsed (x,(),s) -> Parsed (f x, (), s) | Failed () -> Failed ()
 
@@ -72,7 +83,6 @@ struct
     | Parsed (x,(),s') -> p2 x s'
     | Failed () -> Failed ()
 
-  (* let (|>) = seq *)
   let (>>=) = seq
 
   let (@~>) p1 p2 s : _ r =
@@ -124,6 +134,86 @@ struct
 
   let whitespace : string parser = (look " ") <|> (look "\n") <|> (look "\t")
   let whitespaces = many_fold (fun () _ -> ()) () whitespace
+
+  let map f p = p --> f
+  let empty s = Parsed ((), (), s)
+  let guard p f r s =
+    let x = p s in
+    match x with
+    | Parsed (ans, (), s) ->  if f ans then x else Failed (match r with None -> () | Some r -> r ans)
+    | Failed () -> Failed ()
+(*
+ let  e = expr id
+               [| left , [ostap ("+"), (fun x y -> `Add (x, y)); ostap ("-"), (fun x y -> `Sub (x, y))]
+                ; left , [ostap ("*"), (fun x y -> `Mul (x, y)); ostap ("/"), (fun x y -> `Div (x, y))]
+               |]
+               primary
+               s
+ *)
+
+  let expr:   ('a parser -> 'a parser) ->
+               ([ `Lefta | `Nona | `Righta ] * ('oper parser * ('a -> 'a -> 'a)) list) array ->
+               'a parser -> 'a parser
+  = fun f ops opnd ->
+    let ops = ops |> Array.map (fun (assoc, lst) ->
+                                let g = match assoc with `Lefta | `Nona -> left | `Righta -> right in
+                                assoc = `Nona, alt_list (List.map (fun (oper, action) -> oper --> fun _ -> g action) lst)
+                               )
+    in
+    let (_: (bool * (('b -> 'b) -> 'b -> 'c -> 'd) parser) array) = ops in
+    let n = Array.length ops in
+    let op i   = snd ops.(i) in
+    let nona i = fst ops.(i) in
+    let id x = x in
+
+
+    let rec inner l c =
+       f
+         (fun _ostap_stream ->
+            alt
+              (seq
+                 (guard empty
+                    (fun _ -> n = l) None)
+                 (fun _ -> map (fun (x as _0) -> c x) opnd))
+              (alt
+                 (seq
+                    (guard empty
+                       (fun _ -> n > l && not (nona l)) None)
+                    (fun _ ->
+                       seq
+                         (fun _ostap_stream -> inner (l + 1) id _ostap_stream)
+                         (fun (x as _1) ->
+                            map
+                              (fun (b as _0) ->
+                                 match b with
+                                   None -> c x
+                                 | Some x -> x)
+                              (opt
+                                 (seq
+                                    (fun _ostap_stream -> op l _ostap_stream)
+                                    (fun o _ostap_stream ->
+                                       inner l (o c x) _ostap_stream))))))
+                 (seq
+                    (guard empty
+                       (fun _ -> n > l && nona l) None)
+                    (fun _ ->
+                       seq
+                         (fun _ostap_stream -> inner (l + 1) id _ostap_stream)
+                         (fun (x as _1) ->
+                            map
+                              (fun (b as _0) ->
+                                 match b with
+                                   None -> c x
+                                 | Some x -> x)
+                              (opt
+                                 (seq
+                                    (fun _ostap_stream -> op l _ostap_stream)
+                                    (fun o _ostap_stream ->
+                                       inner (l + 1) (o c x)
+                                         _ostap_stream)))))))
+              _ostap_stream)
+    in
+    inner 0 id
 
 
 end

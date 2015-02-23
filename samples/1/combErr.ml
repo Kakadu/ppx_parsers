@@ -49,9 +49,9 @@ struct
   let map_result f = function Parsed (x,err,s) -> Parsed (f x,err,s) | Failed x -> Failed x
   let look patt t =
     match S.look t patt with
-    | Some t -> printf "look '%s' succeeded\n%!" patt;
+    | Some t -> (* printf "look '%s' succeeded\n%!" patt; *)
                 Parsed (patt, ErrMap.empty, t)
-    | None -> printf "look '%s' failed\n%!" patt;
+    | None -> (* printf "look '%s' failed\n%!" patt; *)
               Failed (ErrMap.my_create (sprintf "can't parse '%s'" patt) (S.position t))
 
   let (<|>) l r s =
@@ -135,5 +135,5 @@ struct
   let whitespace : string parser = (look " ") <|> (look "\n") <|> (look "\t")
   let whitespaces = many_fold (fun () _ -> ()) () whitespace
 
-
+  let expr = assert false
 end

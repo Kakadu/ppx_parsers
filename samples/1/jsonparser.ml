@@ -19,18 +19,14 @@ module SimpleStream  = struct
      end
 
  let string_literal ((cur_pos,s) as stream) =
-   (* log "string_literal"; *)
    if is_finished stream then None else
-   (* let () = log "1" in *)
    let input_len = String.length s in
    let rec loop last_char pos =
-     (* log "loop: %c %d" last_char pos; *)
      if pos >=input_len then -1 else
      if s.[pos] = '"' && last_char = '\\' then loop s.[pos] (pos+1) else
      if s.[pos] = '"' then pos
      else loop s.[pos] (pos+1)
    in
-   (* log "s = %s" s; *)
    if s.[cur_pos] <> '"' then None else
    let r = loop '"' (cur_pos+1) in
    if r = -1 then None
@@ -51,7 +47,7 @@ module Json1 = struct
     let string_lit s : string r =
       match SimpleStream.string_literal (Obj.magic s) with
       | Some (s, stream) ->
-         log "string_lit parsed: '%s'" s;
+         (* log "string_lit parsed: '%s'" s; *)
          Parsed (s, ErrMap.empty, stream)
       | None -> Failed ErrMap.empty
 
@@ -64,17 +60,16 @@ module Json1 = struct
                    ; ((look "null") <|> (look "true") <|> (look "false")) --> const ()
       ])) stream
 
-    and obj s: unit r = (((look "{") @~> (list0 (whitespaces @~> member) (look ",") ) <~@ (whitespaces @~> look "}")) --> const ()) s
+    and obj s: unit r = ((look "{" @~> (list0 (whitespaces @~> member) (look ",") ) <~@ (whitespaces @~> look "}")) --> const ()) s
     and arr s: _ list r =
-      print_endline "Calling arr";
-      (whitespaces @~> (look "[") @~> ( (list0 (whitespaces @~> value) (whitespaces @~> look ",") ) )  <~@ (whitespaces @~> look "]")) s
+      (whitespaces @~> look "[" @~> (list0 (whitespaces @~> value) (whitespaces @~> look ",") ) <~@ (whitespaces @~> look "]") ) s
     and member s: unit r = ((string_lit @~> (whitespaces @~> look ":") @~> value) ) s
 
 
 end
 
 let () =
-  let filename = "json1" in
+  let filename = "json12" in
   let s =
     let ch = open_in filename in
     let ans = Std.input_all ch in
