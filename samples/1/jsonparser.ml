@@ -38,18 +38,10 @@ module Json1 = struct
     include CombErr.Make(SimpleStream)
     open CombErr
 
-    let debug_map msg p stream =
-      let ans = p stream in
-      match p stream with
-      | Parsed (_,_,_) -> printf "%s +\n%!" msg; ans
-      | Failed _       -> printf "%s -\n%!" msg; ans
-
     let string_lit s : string r =
       match SimpleStream.string_literal (Obj.magic s) with
-      | Some (s, stream) ->
-         (* log "string_lit parsed: '%s'" s; *)
-         Parsed (s, ErrMap.empty, stream)
-      | None -> Failed ErrMap.empty
+      | Some (s, stream) -> Parsed (s, ErrMap.empty, stream)
+      | None             -> Failed ErrMap.empty
 
     let rec value stream : unit r =
       (whitespaces @~>

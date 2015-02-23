@@ -19,8 +19,6 @@ module SimpleStream : Comb.STREAM = struct
 end
 
 module Expr1 = struct
-
-
     include Comb.Make(SimpleStream)
     let op =
       (look "+" --> (fun _ -> (+))) <|>
@@ -71,11 +69,6 @@ module Expr2 = struct
             ; `Lefta , [look ("*"), (fun x y -> Mul (x, y)); look ("/"), (fun x y -> Div (x, y)) ]
            |]
            num
-
-    (* let rec expr t = (( *)
-    (*   num    >>= fun left -> print_endline "here1"; *)
-    (*   op     >>= fun op  -> *)
-    (*   expr --> fun right -> op left right) <|> num) t *)
 
 end
 
