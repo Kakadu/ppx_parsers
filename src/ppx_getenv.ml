@@ -7,7 +7,7 @@ open Longident
 
 let getenv s = try Sys.getenv s with Not_found -> ""
 
-let is_a_parser attrs = List.fold_left (fun acc -> function ({txt="parser"; _},_) -> true && acc | _ -> acc) false attrs
+let is_a_parser attrs = List.fold_left (fun acc -> function ({txt="parser"; _},_) -> true | _ -> acc)  false attrs
 let log fmt = kprintf (printf ">>> %s\n%!") fmt
 
 let () = log "PPX_PARSERS"
@@ -18,6 +18,30 @@ let is_good_value_binding vb =
       | Ppat_var _ -> true
       | _ -> false)
 
+let classify_oper = function
+  | Pexp_ident { txt=Lident "<|>"; _ } -> `Alt
+  | _ -> `Unknown
+
+let map_expr_body mapper expr =
+  (* most magic should be here *)
+  (* TODO: match for
+   * Pexp_apply
+   *         expression (a.ml[14,281+23]..[14,281+26])
+   *         Pexp_ident "<|>" (a.ml[14,281+23]..[14,281+26])
+   * first
+   *)
+  match classify_oper expr.pexp_desc with
+  | `Unknown -> default_mapper.expr mapper expr
+  | `Alt     -> begin
+      let l,r = match expr.pexp_desc with
+        |
+      in
+      (* parser for alternatives *)
+      log "(* parser for alternatives *)";
+      let match_e = app () (evar s)
+      func [pvar "s", Pexp_match (match_e, cases)]
+      default_mapper.expr mapper expr
+    end
 
 let map_value_binding mapper (vb: value_binding) =
   log "2";
@@ -28,7 +52,8 @@ let map_value_binding mapper (vb: value_binding) =
     | _ -> assert false
   in
   log "Found a good function '%s'" name;
-  default_mapper.value_binding mapper vb
+  {vb with pvb_expr = map_expr_body mapper vb.pvb_expr }
+  (* default_mapper.value_binding mapper vb *)
 
 let struct_item_mapper argv =
   log "struct_item_mapper ";
