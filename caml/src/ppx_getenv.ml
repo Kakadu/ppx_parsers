@@ -5,12 +5,26 @@ open Asttypes
 open Parsetree
 open Longident
 
+
+let log fmt = kprintf (printf ">>> %s\n%!") fmt
+
+type past =
+  | OExpr of Parsetree.expression
+  | Alt of past * past
+  | AltList of past list
+
+let rec parse_past root =
+  let rec helper : Parsetree.expression -> past = fun root ->
+    match root.pexp_desc with
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "<|>"; _ }; _}, [(_,l); (_,r)]) ->
+       Alt (helper l, helper r)
+    | _ -> OExpr root
+  in helper root
+
 let getenv s = try Sys.getenv s with Not_found -> ""
 
 let is_a_parser attrs = List.fold_left (fun acc -> function ({txt="parser"; _},_) -> true | _ -> acc)  false attrs
 let remove_parser_attr = List.filter (function ({txt="parser"; _},_) -> false | _ -> true)
-
-let log fmt = kprintf (printf ">>> %s\n%!") fmt
 
 let () = log "PPX_PARSERS"
 

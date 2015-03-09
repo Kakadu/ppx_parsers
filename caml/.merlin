@@ -1,4 +1,5 @@
 PKG compiler-libs
+PKG ppx_tools
 
 S src
 B _build
