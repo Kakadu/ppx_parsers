@@ -8,5 +8,7 @@ if [ $? != 0 ]; then
     exit $res
 fi
 
-ocamlfind c -w -20 -ppx ../_build/src/ppx_getenv.native -c a.ml -dsource
+set -xe
+ocamlfind ppx_tools/rewriter ../_build/src/ppx_getenv.native a.ml
+#ocamlfind c -w -20 -ppx ../_build/src/ppx_getenv.native -c a.ml -dsource
 exit $?

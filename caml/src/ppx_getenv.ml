@@ -10,6 +10,7 @@ let log fmt = kprintf (printf ">>> %s\n%!") fmt
 
 type past =
   | OExpr of Parsetree.expression
+  | Look of string
   | Alt of past * past
   | AltList of past list
 
@@ -18,6 +19,10 @@ let rec parse_past root =
     match root.pexp_desc with
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "<|>"; _ }; _}, [(_,l); (_,r)]) ->
        Alt (helper l, helper r)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "look"; _ }; _},
+                  [_, {pexp_desc=Pexp_constant (Const_string (patt,_)); _}]) ->
+       log "Look with patt = '%s' found." patt;
+       Look patt
     | _ -> OExpr root
   in helper root
 
@@ -33,7 +38,7 @@ let is_good_value_binding vb =
   && (match vb.pvb_pat.ppat_desc with
       | Ppat_var _ -> true
       | _ -> false)
-
+(*
 let classify_oper = function
   | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "<|>"; _ }; _}, [(_,l); (_,r)]) ->
      log "<|> is found";
@@ -56,7 +61,22 @@ let map_expr_body mapper expr =
       in
       let ans = Ast_helper.Exp.(fun_ "" None (pvar "s") (match_ match_e cases)) in
       ans
-    end
+    end *)
+
+let map_past (past: past) : Parsetree.expression =
+  log "map_past";
+  let open Ast_helper in
+  let open Ast_convenience in
+  let rec helper = function
+    | Look str  ->
+       let match_expr = Exp.(apply (ident @@ lid "Lexer.look") [("", evar "_stream"); ("", Ast_convenience.str str)]) in
+       Exp.(match_ match_expr [])
+       (* Exp.ident (Ast_convenience.lid "str") *)
+    | OExpr e -> e
+    | _ -> Exp.ident (Ast_convenience.lid "yayaya")
+  in
+  Exp.(fun_ "" None (pvar "_stream") (helper past))
+
 
 let map_value_binding mapper (vb: value_binding) =
   assert (is_good_value_binding vb);
@@ -65,9 +85,11 @@ let map_value_binding mapper (vb: value_binding) =
     | Ppat_var ({txt; _}) -> txt
     | _ -> assert false
   in
-  log "Found a good function '%s'" name;
-  { {vb with pvb_expr = map_expr_body mapper vb.pvb_expr } with pvb_attributes=remove_parser_attr vb.pvb_attributes }
-  (* default_mapper.value_binding mapper vb *)
+  log "Found a value binding '%s'" name;
+  let newbody = map_past (parse_past vb.pvb_expr) in
+  { {vb with pvb_expr = newbody } with pvb_attributes=remove_parser_attr vb.pvb_attributes }
+  (* { {vb with pvb_expr = map_expr_body mapper vb.pvb_expr } with pvb_attributes=remove_parser_attr vb.pvb_attributes } *)
+
 
 let struct_item_mapper argv =
   log "struct_item_mapper ";
