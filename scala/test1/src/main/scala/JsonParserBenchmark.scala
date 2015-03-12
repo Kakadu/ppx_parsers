@@ -4,7 +4,6 @@ import org.scalameter.api._
 import JsonParsers._
 import scala.collection.mutable.ListBuffer
 
-import lms._
 import InputWindow._
 
 object JsonParserBenchmark extends PerformanceTest {
@@ -19,18 +18,18 @@ object JsonParserBenchmark extends PerformanceTest {
   val range = Gen.enumeration("size")(10)
 
   val files = (1 to 4).foldLeft(new ListBuffer[Array[Char]]){ (acc,i) =>
-    val filename = "FastParsers/src/test/resources/json" + i
+    val filename = "test1/src/test/resources/json" + i
     val data = scala.io.Source.fromFile(filename).getLines mkString "\n"
     acc.append(data.toCharArray)
     acc
   }.toList
 
-  val bigFileName = "FastParsers/src/test/resources/" + "json.big1"
+  val bigFileName = "test1/src/test/resources/" + "json.big1"
   val bigFile = scala.io.Source.fromFile(bigFileName).getLines mkString "\n"
   val bigFileArray = bigFile.toCharArray
   val bigFileSeq = new FastCharSequence(bigFileArray)
 
-  val vbigFileName = "FastParsers/src/test/resources/" + "json.vbig"
+  val vbigFileName = "test1/src/test/resources/" + "json.vbig"
   val vbigFile = scala.io.Source.fromFile(vbigFileName).getLines mkString "\n"
   val vbigFileArray = vbigFile.toCharArray
   val vbigFileSeq = new FastCharSequence(vbigFileArray)
@@ -43,12 +42,6 @@ object JsonParserBenchmark extends PerformanceTest {
           JSonImplBoxed.jsonparser.value(m)
       }
     }
-    measure method "LMS (gen2)" in {
-      using(range) in { j =>
-        for (i <- 1 to j; m <- files)
-          LMSJsonParserGen2.apply(m)
-      }
-    }
 
     /*measure method "Combinators" in {
       using(range) in { j =>
@@ -59,29 +52,21 @@ object JsonParserBenchmark extends PerformanceTest {
   }*/
 
 
- /* performance of "JsonParser on a big input" in {
+  performance of "JsonParser on a big input" in {
     measure method "FastParsers" in {
       using(range) in { j =>
         for (i <- 1 to j)
           JSonImplBoxed.jsonparser.value(bigFileArray)
       }
     }
- 
-    measure method "LMS (gen2)" in {
-      using(range) in { j =>
-        for (i <- 1 to j)
-          LMSJsonParserGen2.apply(bigFileArray)
-      }
-    }
 
-   /* measure method "Combinators" in {
+    measure method "Combinators" in {
       using(range) in { j =>
         for (i <- 1 to j)
           JSON.parse(JSON.value,bigFileSeq)
       }
-    }*/
-
-  }*/
+    }
+  }
 
 
   /*performance of "JsonParser on a very big input" in {
@@ -99,12 +84,6 @@ object JsonParserBenchmark extends PerformanceTest {
       }
     }
 
-    measure method "LMS (gen2)" in {
-      using(range) in { j =>
-        for (i <- 1 to j)
-          LMSJsonParserGen2.apply(vbigFileArray)
-      }
-    }
   }*/
 
 

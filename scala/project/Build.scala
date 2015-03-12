@@ -10,7 +10,11 @@ object HelloBuild extends Build {
 
     def commonSettings = Seq(
       scalaVersion := "2.11.5",
-      resolvers ++= Seq( Resolver.sonatypeRepo("snapshots") ),
+      resolvers ++= Seq(
+        Resolver.url("INRIA", url("https://maven.inria.fr/artifactory/repo") ),
+        Resolver.sonatypeRepo("releases"),
+        Resolver.sonatypeRepo("snapshots")
+      ),
 
       libraryDependencies ++=  Seq(
         "org.scala-lang" % "scala-compiler"  % scalaVersion.value % "provided",
@@ -52,9 +56,11 @@ object HelloBuild extends Build {
         ++ commonSettings
         //++ Seq(mainClass := Some("Test1Runner"))
         ++ Seq (
-          libraryDependencies += "org.scalatest"  % "scalatest_2.11"   % "2.2.1" % "test",
+          libraryDependencies += "org.scalatest"  % "scalatest_2.11"   % "2.2.4",
           libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
-          libraryDependencies += "com.storm-enroute" % "scalameter_2.11" % "0.6" % "test",
+          libraryDependencies += "com.storm-enroute" % "scalameter_2.11" % "0.6",
+          //libraryDependencies += "com.github.axel22" %% "scalameter" % "0.5-M2",
+          //libraryDependencies += "INRIA" %% "lms_2.10" % "0.2",  // fuck the lms, can't find for scala 2.11
 
           testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
         )
