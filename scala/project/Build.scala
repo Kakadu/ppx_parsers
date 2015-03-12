@@ -10,7 +10,7 @@ object HelloBuild extends Build {
 
     def commonSettings = Seq(
       scalaVersion := "2.11.5",
-      resolvers ++= Seq("Sonatype Releases" at "http://oss.sonatype.org/content/repositories/snapshots"),
+      resolvers ++= Seq( Resolver.sonatypeRepo("snapshots") ),
 
       libraryDependencies ++=  Seq(
         "org.scala-lang" % "scala-compiler"  % scalaVersion.value % "provided",
@@ -34,6 +34,8 @@ object HelloBuild extends Build {
         settings = commonSettings
           ++ macroSettings
           ++ Seq(
+            mainClass := Some("kakadu.Hw"),
+
             libraryDependencies += "org.scalatest"  % "scalatest_2.11"   % "2.2.1" % "test",
             libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
             libraryDependencies += "com.storm-enroute" % "scalameter_2.11" % "0.6" % "test",
@@ -58,5 +60,3 @@ object HelloBuild extends Build {
         )
     )
 }
-
-

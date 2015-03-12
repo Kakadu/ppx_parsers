@@ -1,3 +1,5 @@
+package kakadu
+
 import fastparsers.parsers.Parser
 
 object Hw {
