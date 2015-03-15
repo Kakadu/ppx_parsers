@@ -1,0 +1,953 @@
+  object JSonImpl3 {
+    import FastParsersCharArrayNoInline._
+    val jsonparser = FastParsersCharArray{
+      def value:Parser[Any] = whitespaces ~> (obj | arr | stringLit | decimalNumber | nullValue | trueValue | falseValue)
+      def obj:Parser[Any] = '{' ~> repsep(member,comma) <~ closeBracket
+      def arr:Parser[Any] = '[' ~> repsep(value,comma) <~ closeSBracket
+      def member:Parser[Any] = stringLit ~ (lit(points) ~> value)
+    }
+  }
+
+performing macro expansion FastParsersCharArrayNoInline.FastParsersCharArray({
+  def value: fastparsers.parsers.Parser[Any] = FastParsersCharArrayNoInline.baseParsers[InputWindow.InputWindow[Array[Char]]](FastParsersCharArrayNoInline.whitespaces).~>[Any](FastParsersCharArrayNoInline.baseParsers[Any](FastParsersCharArrayNoInline.baseParsers[Any](FastParsersCharArrayNoInline.baseParsers[Any](FastParsersCharArrayNoInline.baseParsers[Any](FastParsersCharArrayNoInline.baseParsers[Any](FastParsersCharArrayNoInline.baseParsers[Any](obj).|[Any](arr)).|[Any](FastParsersCharArrayNoInline.stringLit)).|[Any](FastParsersCharArrayNoInline.decimalNumber)).|[Any](FastParsersCharArrayNoInline.lit(Hw.this.nullValue))).|[Any](FastParsersCharArrayNoInline.lit(Hw.this.trueValue))).|[Any](FastParsersCharArrayNoInline.lit(Hw.this.falseValue)));
+  def obj: fastparsers.parsers.Parser[Any] = FastParsersCharArrayNoInline.baseParsers[List[Any]](FastParsersCharArrayNoInline.elemParser('{').~>[List[Any]](FastParsersCharArrayNoInline.repsep[Any, Array[Char]](member, FastParsersCharArrayNoInline.lit(Hw.this.comma)))).<~[Array[Char]](FastParsersCharArrayNoInline.lit(Hw.this.closeBracket));
+  def arr: fastparsers.parsers.Parser[Any] = FastParsersCharArrayNoInline.baseParsers[List[Any]](FastParsersCharArrayNoInline.elemParser('[').~>[List[Any]](FastParsersCharArrayNoInline.repsep[Any, Array[Char]](value, FastParsersCharArrayNoInline.lit(Hw.this.comma)))).<~[Array[Char]](FastParsersCharArrayNoInline.lit(Hw.this.closeSBracket));
+  def member: fastparsers.parsers.Parser[Any] = FastParsersCharArrayNoInline.baseParsers[InputWindow.InputWindow[Array[Char]]](FastParsersCharArrayNoInline.stringLit).~[Any](FastParsersCharArrayNoInline.baseParsers[Array[Char]](FastParsersCharArrayNoInline.lit(Hw.this.points)).~>[Any](value));
+  ()
+}) at source-/home/kakadu/prog/ocaml/ppx_parsers/scala/hello1/src/main/scala/hw.scala,line-46,offset=1574
+{
+  class fresh$macro$98 extends FinalFastParserImpl {
+    def <init>() = {
+      super.<init>();
+      ()
+    };
+    import scala.collection.mutable.ListBuffer;
+    import scala.reflect.runtime.universe._;
+    @new scala.annotation.compileTimeOnly("can\'t be used outside of FastParser") def member: fastparsers.parsers.Parser[Any] = $qmark$qmark$qmark;
+    @new scala.annotation.compileTimeOnly("can\'t be used outside of FastParser") def arr: fastparsers.parsers.Parser[Any] = $qmark$qmark$qmark;
+    @new scala.annotation.compileTimeOnly("can\'t be used outside of FastParser") def value: fastparsers.parsers.Parser[Any] = $qmark$qmark$qmark;
+    @new scala.annotation.compileTimeOnly("can\'t be used outside of FastParser") def obj: fastparsers.parsers.Parser[Any] = $qmark$qmark$qmark;
+
+    //       def member:Parser[Any] = stringLit ~ (lit(points) ~> value)
+    def member(input$macro$1: Array[Char], fresh$macro$6: Int = 0): ParseResult[Any, String] @fastparsers.framework.saveAST(FastParsersCharArrayNoInline.baseParsers[InputWindow.InputWindow[Array[Char]]](FastParsersCharArrayNoInline.stringLit).$tilde[Any](FastParsersCharArrayNoInline.baseParsers[Array[Char]](FastParsersCharArrayNoInline.lit(Hw.this.points)).$tilde$greater[Any](FastParsersCharArrayNoInline.call[Any]("value")))) = {
+      var error = " ";
+      {
+        var inputpos$macro$2 = fresh$macro$6;
+        val inputsize$macro$3 = input$macro$1.size;
+        {
+          val inputpositioned$macro$4 = new fastparsers.tools.ToPosition.IndexedCharSeqToPosition(input$macro$1);
+          {
+            var success$macro$5 = false;
+            var fresh$macro$9: InputWindow.CharArrayStruct = null;
+            var fresh$macro$14: Array[Char] = null;
+            var fresh$macro$16: Any = null;
+            var fresh$macro$17: scala.Tuple2[InputWindow.CharArrayStruct, Any] = null;
+            {
+              {
+                val fresh$macro$8 = inputpos$macro$2;
+                {
+                  while$2(){
+                    if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == (' ') || (input$macro$1(inputpos$macro$2) == ('\t')) || (input$macro$1(inputpos$macro$2) == ('\n')) || (input$macro$1(inputpos$macro$2) == ('\r'))))
+                      {
+                        inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                        while$2()
+                      }
+                    else
+                      ()
+                  };
+                  val fresh$macro$7 = inputpos$macro$2;
+                  if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == ('\"')))
+                    {
+                      inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                      while$1(){
+                        if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) != ('\"')))
+                          {
+                            {
+                              if (input$macro$1(inputpos$macro$2) == ('\\'))
+                                inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                              else
+                                ();
+                              inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                            };
+                            while$1()
+                          }
+                        else
+                          ()
+                      };
+                      if (inputpos$macro$2 < (inputsize$macro$3))
+                        {
+                          success$macro$5 = true;
+                          inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                          // result of parsing
+                          fresh$macro$9 = new InputWindow.CharArrayStruct(input$macro$1, fresh$macro$7, inputpos$macro$2)
+                        }
+                      else
+                        {
+                          success$macro$5 = false;
+                          ();
+                          inputpos$macro$2 = fresh$macro$8
+                        }
+                    }
+                  else
+                    {
+                      success$macro$5 = false;
+                      ();
+                      inputpos$macro$2 = fresh$macro$8
+                    }
+                }
+              };
+
+              if (success$macro$5)
+                {  // string literal is gotten
+                  {
+                    {
+                      val fresh$macro$13 = inputpos$macro$2;
+                      {
+                        var fresh$macro$12 = 0;
+                        val fresh$macro$11 = Hw.this.points.length;
+                        while$4(){
+                          if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == (' ') || (input$macro$1(inputpos$macro$2) == ('\t')) || (input$macro$1(inputpos$macro$2) == ('\n')) || (input$macro$1(inputpos$macro$2) == ('\r'))))
+                            {
+                              inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                              while$4()
+                            }
+                          else
+                            ()
+                        };
+                        // trying to parse points
+                        while$3(){
+                          if ( (inputpos$macro$2 < inputsize$macro$3) &&
+                               (fresh$macro$12 < (fresh$macro$11)) &&
+                               (input$macro$1(inputpos$macro$2) == (Hw.this.points.charAt(fresh$macro$12))) )
+                            {
+                              {
+                                fresh$macro$12 = fresh$macro$12.$plus(1);
+                                inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                              };
+                              while$3()
+                            }
+                          else
+                            ()
+                        };
+                        if (fresh$macro$12 == fresh$macro$11)
+                          {
+                            success$macro$5 = true;
+                            fresh$macro$14 = Hw.this.points
+                          }
+                        else
+                          {
+                            success$macro$5 = false;
+                            ();
+                            inputpos$macro$2 = fresh$macro$13
+                          }
+                      }
+                    };
+                    if (success$macro$5)
+                      {
+                        val fresh$macro$15 = value(input$macro$1, inputpos$macro$2);
+                        success$macro$5 = fresh$macro$15.success;
+                        if (success$macro$5)
+                          {
+                            inputpos$macro$2 = fresh$macro$15.inputPos;
+                            fresh$macro$16 = fresh$macro$15.result
+                          }
+                        else
+                          error = fresh$macro$15.error
+                      }
+                    else
+                      ()
+                  };
+                  fresh$macro$17 = scala.Tuple2(fresh$macro$9, fresh$macro$16)
+                }
+              else
+                ()
+            };
+            ParseResult(success$macro$5, error, if (success$macro$5)
+              fresh$macro$17
+            else
+              null, inputpos$macro$2)
+          }
+        }
+      }
+    };
+    // def arr:Parser[Any] = '[' ~> repsep(value,comma) <~ closeSBracket
+    def arr(input$macro$1: Array[Char], fresh$macro$18: Int = 0): ParseResult[Any, String] @fastparsers.framework.saveAST(FastParsersCharArrayNoInline.baseParsers[List[Any]](FastParsersCharArrayNoInline.elemParser('[').$tilde$greater[List[Any]](FastParsersCharArrayNoInline.repsep[Any, Array[Char]](FastParsersCharArrayNoInline.call[Any]("value"), FastParsersCharArrayNoInline.lit(Hw.this.comma)))) < $tilde[Array[Char]](FastParsersCharArrayNoInline.lit(Hw.this.closeSBracket))) = {
+      var error = " ";
+      {
+        var inputpos$macro$2 = fresh$macro$18;
+        val inputsize$macro$3 = input$macro$1.size;
+        {
+          val inputpositioned$macro$4 = new fastparsers.tools.ToPosition.IndexedCharSeqToPosition(input$macro$1);
+          {
+            var success$macro$5 = false;
+            var fresh$macro$19: Char = ' ';
+            var fresh$macro$22: List[Any] = null;
+            var fresh$macro$28: Array[Char] = null;
+            var fresh$macro$31: Any = null;
+            var fresh$macro$36: Array[Char] = null;
+            {
+              {
+                if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == ('[')))
+                  {
+                    fresh$macro$19 = '[';
+                    inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                    success$macro$5 = true
+                  }
+                else
+                  {
+                    success$macro$5 = false;
+                    ()
+                  };
+                if (success$macro$5)
+                  {
+                    var fresh$macro$20 = true;
+                    val fresh$macro$21 = new ListBuffer[Any]();
+                    while$7(){
+                      if (fresh$macro$20)
+                        {
+                          {
+                            val fresh$macro$29 = inputpos$macro$2;
+                            {
+                              {
+                                val fresh$macro$30 = value(input$macro$1, inputpos$macro$2);
+                                success$macro$5 = fresh$macro$30.success;
+                                if (success$macro$5)
+                                  {
+                                    inputpos$macro$2 = fresh$macro$30.inputPos;
+                                    fresh$macro$31 = fresh$macro$30.result
+                                  }
+                                else
+                                  error = fresh$macro$30.error
+                              };
+                              if (success$macro$5)
+                                {
+                                  fresh$macro$21 += (fresh$macro$31);
+                                  {
+                                    val fresh$macro$23 = inputpos$macro$2;
+                                    {
+                                      {
+                                        val fresh$macro$27 = inputpos$macro$2;
+                                        {
+                                          var fresh$macro$26 = 0;
+                                          val fresh$macro$25 = Hw.this.comma.length;
+                                          while$6(){
+                                            if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == (' ') || (input$macro$1(inputpos$macro$2) == ('\t')) || (input$macro$1(inputpos$macro$2) == ('\n')) || (input$macro$1(inputpos$macro$2) == ('\r'))))
+                                              {
+                                                inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                                while$6()
+                                              }
+                                            else
+                                              ()
+                                          };
+                                          while$5(){
+                                            if (inputpos$macro$2 < (inputsize$macro$3) && (fresh$macro$26 < (fresh$macro$25)) && (input$macro$1(inputpos$macro$2) == (Hw.this.comma.charAt(fresh$macro$26))))
+                                              {
+                                                {
+                                                  fresh$macro$26 = fresh$macro$26.$plus(1);
+                                                  inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                                                };
+                                                while$5()
+                                              }
+                                            else
+                                              ()
+                                          };
+                                          if (fresh$macro$26 == (fresh$macro$25))
+                                            {
+                                              success$macro$5 = true;
+                                              fresh$macro$28 = Hw.this.comma
+                                            }
+                                          else
+                                            {
+                                              success$macro$5 = false;
+                                              ();
+                                              inputpos$macro$2 = fresh$macro$27
+                                            }
+                                        }
+                                      };
+                                      if (success$macro$5.unary_$bang)
+                                        {
+                                          fresh$macro$20 = false;
+                                          inputpos$macro$2 = fresh$macro$23
+                                        }
+                                      else
+                                        ()
+                                    }
+                                  }
+                                }
+                              else
+                                {
+                                  fresh$macro$20 = false;
+                                  inputpos$macro$2 = fresh$macro$29
+                                }
+                            }
+                          };
+                          while$7()
+                        }
+                      else
+                        ()
+                    };
+                    {
+                      fresh$macro$22 = fresh$macro$21.toList;
+                      success$macro$5 = true
+                    }
+                  }
+                else
+                  ()
+              };
+              if (success$macro$5)
+                {
+                  val fresh$macro$35 = inputpos$macro$2;
+                  {
+                    var fresh$macro$34 = 0;
+                    val fresh$macro$33 = Hw.this.closeSBracket.length;
+                    while$9(){
+                      if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == (' ') || (input$macro$1(inputpos$macro$2) == ('\t')) || (input$macro$1(inputpos$macro$2) == ('\n')) || (input$macro$1(inputpos$macro$2) == ('\r'))))
+                        {
+                          inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                          while$9()
+                        }
+                      else
+                        ()
+                    };
+                    while$8(){
+                      if (inputpos$macro$2 < (inputsize$macro$3) && (fresh$macro$34 < (fresh$macro$33)) && (input$macro$1(inputpos$macro$2) == (Hw.this.closeSBracket.charAt(fresh$macro$34))))
+                        {
+                          {
+                            fresh$macro$34 = fresh$macro$34.$plus(1);
+                            inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                          };
+                          while$8()
+                        }
+                      else
+                        ()
+                    };
+                    if (fresh$macro$34 == (fresh$macro$33))
+                      {
+                        success$macro$5 = true;
+                        fresh$macro$36 = Hw.this.closeSBracket
+                      }
+                    else
+                      {
+                        success$macro$5 = false;
+                        ();
+                        inputpos$macro$2 = fresh$macro$35
+                      }
+                  }
+                }
+              else
+                ()
+            };
+            ParseResult(success$macro$5, error, if (success$macro$5)
+              fresh$macro$22
+            else
+              null, inputpos$macro$2)
+          }
+        }
+      }
+    };
+    // def value:Parser[Any] = whitespaces ~> (obj | arr | stringLit | decimalNumber | nullValue | trueValue | falseValue)
+    def value(input$macro$1: Array[Char], fresh$macro$37: Int = 0): ParseResult[Any, String] @fastparsers.framework.saveAST(FastParsersCharArrayNoInline.baseParsers[InputWindow.InputWindow[Array[Char]]](FastParsersCharArrayNoInline.whitespaces).$tilde$greater[Any](FastParsersCharArrayNoInline.baseParsers[Any](FastParsersCharArrayNoInline.baseParsers[Any](FastParsersCharArrayNoInline.baseParsers[Any](FastParsersCharArrayNoInline.baseParsers[Any](FastParsersCharArrayNoInline.baseParsers[Any](FastParsersCharArrayNoInline.baseParsers[Any](FastParsersCharArrayNoInline.call[Any]("obj")).$bar[Any](FastParsersCharArrayNoInline.call[Any]("arr"))).$bar[Any](FastParsersCharArrayNoInline.stringLit)).$bar[Any](FastParsersCharArrayNoInline.decimalNumber)).$bar[Any](FastParsersCharArrayNoInline.lit(Hw.this.nullValue))).$bar[Any](FastParsersCharArrayNoInline.lit(Hw.this.trueValue))).$bar[Any](FastParsersCharArrayNoInline.lit(Hw.this.falseValue)))) = {
+      var error = " ";
+      {
+        var inputpos$macro$2 = fresh$macro$37;
+        val inputsize$macro$3 = input$macro$1.size;
+        {
+          val inputpositioned$macro$4 = new fastparsers.tools.ToPosition.IndexedCharSeqToPosition(input$macro$1);
+          {
+            var success$macro$5 = false;
+            var fresh$macro$40: InputWindow.CharArrayStruct = null;
+            var fresh$macro$41: Any = null;
+            var fresh$macro$43: Any = null;
+            var fresh$macro$45: Any = null;
+            var fresh$macro$47: Any = null;
+            var fresh$macro$49: Any = null;
+            var fresh$macro$51: Any = null;
+            var fresh$macro$54: Any = null;
+            var fresh$macro$56: Any = null;
+            var fresh$macro$59: InputWindow.CharArrayStruct = null;
+            var fresh$macro$62: InputWindow.CharArrayStruct = null;
+            var fresh$macro$68: Array[Char] = null;
+            var fresh$macro$73: Array[Char] = null;
+            var fresh$macro$78: Array[Char] = null;
+            {
+              {
+                val fresh$macro$38 = inputpos$macro$2;
+                while$10(){
+                  if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == (' ') || (input$macro$1(inputpos$macro$2) == ('\t')) || (input$macro$1(inputpos$macro$2) == ('\n')) || (input$macro$1(inputpos$macro$2) == ('\r'))))
+                    {
+                      inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                      while$10()
+                    }
+                  else
+                    ()
+                };
+                fresh$macro$40 = new InputWindow.CharArrayStruct(input$macro$1, fresh$macro$38, inputpos$macro$2);
+                success$macro$5 = true
+              };
+              if (success$macro$5)
+                {
+                  val fresh$macro$42 = inputpos$macro$2;
+                  {
+                    {
+                      val fresh$macro$44 = inputpos$macro$2;
+                      {
+                        {
+                          val fresh$macro$46 = inputpos$macro$2;
+                          {
+                            {
+                              val fresh$macro$48 = inputpos$macro$2;
+                              {
+                                {
+                                  val fresh$macro$50 = inputpos$macro$2;
+                                  {
+                                    {
+                                      val fresh$macro$52 = inputpos$macro$2;
+                                      {
+                                        {
+                                          val fresh$macro$53 = obj(input$macro$1, inputpos$macro$2);
+                                          success$macro$5 = fresh$macro$53.success;
+                                          if (success$macro$5)
+                                            {
+                                              inputpos$macro$2 = fresh$macro$53.inputPos;
+                                              fresh$macro$54 = fresh$macro$53.result
+                                            }
+                                          else
+                                            error = fresh$macro$53.error
+                                        };
+                                        if (success$macro$5.unary_$bang)
+                                          {
+                                            inputpos$macro$2 = fresh$macro$52;
+                                            {
+                                              val fresh$macro$55 = arr(input$macro$1, inputpos$macro$2);
+                                              success$macro$5 = fresh$macro$55.success;
+                                              if (success$macro$5)
+                                                {
+                                                  inputpos$macro$2 = fresh$macro$55.inputPos;
+                                                  fresh$macro$56 = fresh$macro$55.result
+                                                }
+                                              else
+                                                error = fresh$macro$55.error
+                                            };
+                                            if (success$macro$5)
+                                              fresh$macro$51 = fresh$macro$56
+                                            else
+                                              ()
+                                          }
+                                        else
+                                          fresh$macro$51 = fresh$macro$54
+                                      }
+                                    };
+                                    if (success$macro$5.unary_$bang)
+                                      {
+                                        inputpos$macro$2 = fresh$macro$50;
+                                        {
+                                          val fresh$macro$58 = inputpos$macro$2;
+                                          {
+                                            while$12(){
+                                              if ( (inputpos$macro$2 < inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == (' ') ||
+                                                   (input$macro$1(inputpos$macro$2) == ('\t')) || (input$macro$1(inputpos$macro$2) == ('\n')) ||
+                                                   (input$macro$1(inputpos$macro$2) == ('\r'))) )
+                                                {
+                                                  inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                                  while$12()
+                                                }
+                                              else
+                                                ()
+                                            };
+                                            val fresh$macro$57 = inputpos$macro$2;
+                                            // checking for stringLit
+                                            if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == ('\"')))
+                                              {
+                                                inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                                while$11(){
+                                                  if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) != ('\"')))
+                                                    {
+                                                      {
+                                                        if (input$macro$1(inputpos$macro$2) == ('\\'))
+                                                          inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                                                        else
+                                                          ();
+                                                        inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                                                      };
+                                                      while$11()
+                                                    }
+                                                  else
+                                                    ()
+                                                };
+                                                if (inputpos$macro$2 < (inputsize$macro$3))
+                                                  {
+                                                    success$macro$5 = true;
+                                                    inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                                    // save stringLit
+                                                    fresh$macro$59 = new InputWindow.CharArrayStruct(input$macro$1, fresh$macro$57, inputpos$macro$2)
+                                                  }
+                                                else
+                                                  {
+                                                    success$macro$5 = false;
+                                                    ();
+                                                    inputpos$macro$2 = fresh$macro$58
+                                                  }
+                                              }
+                                            else
+                                              {
+                                                success$macro$5 = false;
+                                                ();
+                                                inputpos$macro$2 = fresh$macro$58
+                                              }
+                                          }
+                                        };
+                                        if (success$macro$5)
+                                          fresh$macro$49 = fresh$macro$59
+                                        else
+                                          ()
+                                      }
+                                    else
+                                      fresh$macro$49 = fresh$macro$51
+                                  }
+                                };
+                                if (success$macro$5.unary_$bang)
+                                  {
+                                    inputpos$macro$2 = fresh$macro$48;
+                                    {
+                                      val fresh$macro$63 = inputpos$macro$2;
+                                      {
+                                        while$16(){
+                                          if ((inputpos$macro$2 < inputsize$macro$3) &&
+                                              (input$macro$1(inputpos$macro$2) == (' ') ||
+                                              (input$macro$1(inputpos$macro$2) == ('\t')) ||
+                                              (input$macro$1(inputpos$macro$2) == ('\n')) || (input$macro$1(inputpos$macro$2) == '\r')))
+                                            {
+                                              inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                              while$16()
+                                            }
+                                          else
+                                            ()
+                                        };
+                                        // checkig for decimal number there
+                                        var fresh$macro$60 = false;
+                                        val fresh$macro$61 = inputpos$macro$2;
+                                        success$macro$5 = false;
+                                        if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == ('-')))
+                                          inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                                        else
+                                          ();
+                                        if ( (inputpos$macro$2 < inputsize$macro$3) && (input$macro$1(inputpos$macro$2)>='0') &&
+                                             (input$macro$1(inputpos$macro$2) <= ('9')) )
+                                          {
+                                            inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                            while$14(){
+                                              if ((inputpos$macro$2 < inputsize$macro$3) && (input$macro$1(inputpos$macro$2).$greater$eq('0')) &&
+                                                  (input$macro$1(inputpos$macro$2) <= '9'))
+                                                {
+                                                  inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                                  while$14()
+                                                }
+                                              else
+                                                ()
+                                            };
+                                            if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == ('.')))
+                                              {
+                                                inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                                while$13(){
+                                                  if ( (inputpos$macro$2 < inputsize$macro$3) &&
+                                                       (input$macro$1(inputpos$macro$2).$greater$eq('0')) &&
+                                                       (input$macro$1(inputpos$macro$2) <= ('9')))
+                                                    {
+                                                      inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                                      while$13()
+                                                    }
+                                                  else
+                                                    ()
+                                                }
+                                              }
+                                            else
+                                              ();
+                                            success$macro$5 = true;
+                                            fresh$macro$62 = new InputWindow.CharArrayStruct(input$macro$1, fresh$macro$61, inputpos$macro$2)
+                                          }
+                                        else
+                                          if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == ('.')))
+                                            {
+                                              inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                              if ((inputpos$macro$2 < inputsize$macro$3) && (input$macro$1(inputpos$macro$2) >= '0') &&
+                                                  (input$macro$1(inputpos$macro$2) < $eq('9')))
+                                                {
+                                                  inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                                  while$15(){
+                                                    if ((inputpos$macro$2 < inputsize$macro$3) && (input$macro$1(inputpos$macro$2)>='0') &&
+                                                        (input$macro$1(inputpos$macro$2) <= '9'))
+                                                      {
+                                                        inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                                        while$15()
+                                                      }
+                                                    else
+                                                      ()
+                                                  };
+                                                  success$macro$5 = true;
+                                                  fresh$macro$62 = new InputWindow.CharArrayStruct(input$macro$1, fresh$macro$61, inputpos$macro$2)
+                                                }
+                                              else
+                                                ()
+                                            }
+                                          else
+                                            ()
+                                      }
+                                    };
+                                    if (success$macro$5)
+                                      fresh$macro$47 = fresh$macro$62
+                                    else
+                                      ()
+                                  }
+                                else
+                                  fresh$macro$47 = fresh$macro$49
+                              }
+                            };
+                            if (success$macro$5.unary_$bang)
+                              {
+                                // decimal value was not parsed
+                                inputpos$macro$2 = fresh$macro$46;
+                                {
+                                  val fresh$macro$67 = inputpos$macro$2;
+                                  {
+                                    var fresh$macro$66 = 0;
+                                    val fresh$macro$65 = Hw.this.nullValue.length;
+                                    while$18(){
+                                      if ((inputpos$macro$2 < inputsize$macro$3) &&
+                                          (input$macro$1(inputpos$macro$2) == (' ') || (input$macro$1(inputpos$macro$2) == ('\t')) ||
+                                          (input$macro$1(inputpos$macro$2) == ('\n')) || (input$macro$1(inputpos$macro$2) == ('\r'))))
+                                        {
+                                          inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                          while$18()
+                                        }
+                                      else
+                                        ()
+                                    };
+                                    while$17(){
+                                      if ((inputpos$macro$2 < inputsize$macro$3) && (fresh$macro$66 < (fresh$macro$65)) &&
+                                          (input$macro$1(inputpos$macro$2) == (Hw.this.nullValue.charAt(fresh$macro$66))))
+                                        {
+                                          {
+                                            fresh$macro$66 = fresh$macro$66.$plus(1);
+                                            inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                                          };
+                                          while$17()
+                                        }
+                                      else
+                                        ()
+                                    };
+                                    if (fresh$macro$66 == (fresh$macro$65))
+                                      {
+                                        success$macro$5 = true;
+                                        fresh$macro$68 = Hw.this.nullValue
+                                      }
+                                    else
+                                      {
+                                        success$macro$5 = false;
+                                        ();
+                                        inputpos$macro$2 = fresh$macro$67
+                                      }
+                                  }
+                                };
+                                if (success$macro$5)
+                                  fresh$macro$45 = fresh$macro$68
+                                else
+                                  ()
+                              }
+                            else
+                              fresh$macro$45 = fresh$macro$47
+                          }
+                        };
+                        if (success$macro$5.unary_$bang)
+                          {
+                            inputpos$macro$2 = fresh$macro$44;
+                            {
+                              val fresh$macro$72 = inputpos$macro$2;
+                              {
+                                var fresh$macro$71 = 0;
+                                val fresh$macro$70 = Hw.this.trueValue.length;
+                                while$20(){
+                                  if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == (' ') || (input$macro$1(inputpos$macro$2) == ('\t')) || (input$macro$1(inputpos$macro$2) == ('\n')) || (input$macro$1(inputpos$macro$2) == ('\r'))))
+                                    {
+                                      inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                      while$20()
+                                    }
+                                  else
+                                    ()
+                                };
+                                while$19(){
+                                  if ((inputpos$macro$2 < inputsize$macro$3) && (fresh$macro$71 < (fresh$macro$70)) &&
+                                      (input$macro$1(inputpos$macro$2) == (Hw.this.trueValue.charAt(fresh$macro$71))))
+                                    {
+                                      {
+                                        fresh$macro$71 = fresh$macro$71.$plus(1);
+                                        inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                                      };
+                                      while$19()
+                                    }
+                                  else
+                                    ()
+                                };
+                                if (fresh$macro$71 == (fresh$macro$70))
+                                  {
+                                    success$macro$5 = true;
+                                    fresh$macro$73 = Hw.this.trueValue
+                                  }
+                                else
+                                  {
+                                    success$macro$5 = false;
+                                    ();
+                                    inputpos$macro$2 = fresh$macro$72
+                                  }
+                              }
+                            };
+                            if (success$macro$5)
+                              fresh$macro$43 = fresh$macro$73
+                            else
+                              ()
+                          }
+                        else
+                          fresh$macro$43 = fresh$macro$45
+                      }
+                    };
+                    if (success$macro$5.unary_$bang)
+                      {
+                        // if not trueValue than maybe falseValue?
+                        inputpos$macro$2 = fresh$macro$42;
+                        {
+                          val fresh$macro$77 = inputpos$macro$2;
+                          {
+                            var fresh$macro$76 = 0;
+                            val fresh$macro$75 = Hw.this.falseValue.length;
+                            while$22(){
+                              if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == (' ') || (input$macro$1(inputpos$macro$2) == ('\t')) || (input$macro$1(inputpos$macro$2) == ('\n')) || (input$macro$1(inputpos$macro$2) == ('\r'))))
+                                {
+                                  inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                  while$22()
+                                }
+                              else
+                                ()
+                            };
+                            while$21(){
+                              if ((inputpos$macro$2 < inputsize$macro$3) &&
+                                  (fresh$macro$76 < (fresh$macro$75)) && (input$macro$1(inputpos$macro$2) == (Hw.this.falseValue.charAt(fresh$macro$76))))
+                                {
+                                  {
+                                    fresh$macro$76 = fresh$macro$76.$plus(1);
+                                    inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                                  };
+                                  while$21()
+                                }
+                              else
+                                ()
+                            };
+                            if (fresh$macro$76 == (fresh$macro$75))
+                              {
+                                success$macro$5 = true;
+                                fresh$macro$78 = Hw.this.falseValue
+                              }
+                            else
+                              {
+                                success$macro$5 = false;
+                                ();
+                                inputpos$macro$2 = fresh$macro$77
+                              }
+                          }
+                        };
+                        if (success$macro$5)
+                          fresh$macro$41 = fresh$macro$78
+                        else
+                          ()
+                      }
+                    else
+                      fresh$macro$41 = fresh$macro$43
+                  }
+                }
+              else
+                ()
+            };
+            ParseResult(success$macro$5, error, if (success$macro$5)
+              fresh$macro$41
+            else
+              null, inputpos$macro$2)
+          }
+        }
+      }
+    };
+    def obj(input$macro$1: Array[Char], fresh$macro$79: Int = 0): ParseResult[Any, String] @fastparsers.framework.saveAST(FastParsersCharArrayNoInline.baseParsers[List[Any]](FastParsersCharArrayNoInline.elemParser('{').$tilde$greater[List[Any]](FastParsersCharArrayNoInline.repsep[Any, Array[Char]](FastParsersCharArrayNoInline.call[Any]("member"), FastParsersCharArrayNoInline.lit(Hw.this.comma)))) < $tilde[Array[Char]](FastParsersCharArrayNoInline.lit(Hw.this.closeBracket))) = {
+      var error = " ";
+      {
+        var inputpos$macro$2 = fresh$macro$79;
+        val inputsize$macro$3 = input$macro$1.size;
+        {
+          val inputpositioned$macro$4 = new fastparsers.tools.ToPosition.IndexedCharSeqToPosition(input$macro$1);
+          {
+            var success$macro$5 = false;
+            var fresh$macro$80: Char = ' ';
+            var fresh$macro$83: List[Any] = null;
+            var fresh$macro$89: Array[Char] = null;
+            var fresh$macro$92: Any = null;
+            var fresh$macro$97: Array[Char] = null;
+            {
+              {
+                if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == ('{')))
+                  {
+                    fresh$macro$80 = '{';
+                    inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                    success$macro$5 = true
+                  }
+                else
+                  {
+                    success$macro$5 = false;
+                    ()
+                  };
+                if (success$macro$5)
+                  {
+                    var fresh$macro$81 = true;
+                    val fresh$macro$82 = new ListBuffer[Any]();
+                    while$25(){
+                      if (fresh$macro$81)
+                        {
+                          {
+                            val fresh$macro$90 = inputpos$macro$2;
+                            {
+                              {
+                                val fresh$macro$91 = member(input$macro$1, inputpos$macro$2);
+                                success$macro$5 = fresh$macro$91.success;
+                                if (success$macro$5)
+                                  {
+                                    inputpos$macro$2 = fresh$macro$91.inputPos;
+                                    fresh$macro$92 = fresh$macro$91.result
+                                  }
+                                else
+                                  error = fresh$macro$91.error
+                              };
+                              if (success$macro$5)
+                                {
+                                  fresh$macro$82 += (fresh$macro$92);
+                                  {
+                                    val fresh$macro$84 = inputpos$macro$2;
+                                    {
+                                      {
+                                        val fresh$macro$88 = inputpos$macro$2;
+                                        {
+                                          var fresh$macro$87 = 0;
+                                          val fresh$macro$86 = Hw.this.comma.length;
+                                          while$24(){
+                                            if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == (' ') || (input$macro$1(inputpos$macro$2) == ('\t')) || (input$macro$1(inputpos$macro$2) == ('\n')) || (input$macro$1(inputpos$macro$2) == ('\r'))))
+                                              {
+                                                inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                                                while$24()
+                                              }
+                                            else
+                                              ()
+                                          };
+                                          while$23(){
+                                            if (inputpos$macro$2 < (inputsize$macro$3) && (fresh$macro$87 < (fresh$macro$86)) && (input$macro$1(inputpos$macro$2) == (Hw.this.comma.charAt(fresh$macro$87))))
+                                              {
+                                                {
+                                                  fresh$macro$87 = fresh$macro$87.$plus(1);
+                                                  inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                                                };
+                                                while$23()
+                                              }
+                                            else
+                                              ()
+                                          };
+                                          if (fresh$macro$87 == (fresh$macro$86))
+                                            {
+                                              success$macro$5 = true;
+                                              fresh$macro$89 = Hw.this.comma
+                                            }
+                                          else
+                                            {
+                                              success$macro$5 = false;
+                                              ();
+                                              inputpos$macro$2 = fresh$macro$88
+                                            }
+                                        }
+                                      };
+                                      if (success$macro$5.unary_$bang)
+                                        {
+                                          fresh$macro$81 = false;
+                                          inputpos$macro$2 = fresh$macro$84
+                                        }
+                                      else
+                                        ()
+                                    }
+                                  }
+                                }
+                              else
+                                {
+                                  fresh$macro$81 = false;
+                                  inputpos$macro$2 = fresh$macro$90
+                                }
+                            }
+                          };
+                          while$25()
+                        }
+                      else
+                        ()
+                    };
+                    {
+                      fresh$macro$83 = fresh$macro$82.toList;
+                      success$macro$5 = true
+                    }
+                  }
+                else
+                  ()
+              };
+              if (success$macro$5)
+                {
+                  val fresh$macro$96 = inputpos$macro$2;
+                  {
+                    var fresh$macro$95 = 0;
+                    val fresh$macro$94 = Hw.this.closeBracket.length;
+                    while$27(){
+                      if (inputpos$macro$2 < (inputsize$macro$3) && (input$macro$1(inputpos$macro$2) == (' ') || (input$macro$1(inputpos$macro$2) == ('\t')) || (input$macro$1(inputpos$macro$2) == ('\n')) || (input$macro$1(inputpos$macro$2) == ('\r'))))
+                        {
+                          inputpos$macro$2 = inputpos$macro$2.$plus(1);
+                          while$27()
+                        }
+                      else
+                        ()
+                    };
+                    while$26(){
+                      if (inputpos$macro$2 < (inputsize$macro$3) && (fresh$macro$95 < (fresh$macro$94)) && (input$macro$1(inputpos$macro$2) == (Hw.this.closeBracket.charAt(fresh$macro$95))))
+                        {
+                          {
+                            fresh$macro$95 = fresh$macro$95.$plus(1);
+                            inputpos$macro$2 = inputpos$macro$2.$plus(1)
+                          };
+                          while$26()
+                        }
+                      else
+                        ()
+                    };
+                    if (fresh$macro$95 == (fresh$macro$94))
+                      {
+                        success$macro$5 = true;
+                        fresh$macro$97 = Hw.this.closeBracket
+                      }
+                    else
+                      {
+                        success$macro$5 = false;
+                        ();
+                        inputpos$macro$2 = fresh$macro$96
+                      }
+                  }
+                }
+              else
+                ()
+            };
+            ParseResult(success$macro$5, error, if (success$macro$5)
+              fresh$macro$83
+            else
+              null, inputpos$macro$2)
+          }
+        }
+      }
+    }
+  };
+  val fresh$macro$99 = 0;
+  new fresh$macro$98()
+}
