@@ -75,7 +75,36 @@ let map_past (past: past) : Parsetree.expression =
     | OExpr e -> e
     | _ -> Exp.ident (Ast_convenience.lid "yayaya")
   in
-  Exp.(fun_ "" None (pvar "_stream") (helper past))
+
+  let decl_ref ~name valexpr cont =
+    Exp.(let_ Nonrecursive
+              [Vb.mk (Pat.var @@ Location.mknoloc name) (apply (ident @@ lid "ref") [("", valexpr)]) ]
+              cont)
+  in
+  let decl_fun cont = Exp.(fun_ "" None (pvar "_stream") cont) in
+  let decl_error = decl_ref ~name:"error" @@ Exp.constant (Const_string ("", None)) in
+(*  let decl_ans cont =
+    Exp.let_ Nonrecursive [Vb.mk (Pat.var @@ Location.mknoloc "ans") (helper past)] cont
+  in
+ *)
+  let decl_ans = decl_ref ~name:"ans" @@
+                   Exp.(apply (ident@@lid "Obj.magic") ["", construct (lid "()") None])
+  in
+  let call_helper = Exp.(let_ Nonrecursive [Vb.mk (Pat.var @@Location.mknoloc "()") (helper past) ]) in
+  let decl_unreferror =
+    Exp.(let_ Nonrecursive [ Vb.mk (Pat.var @@ Location.mknoloc "error")
+                                   (apply (ident@@lid "!") ["", ident@@lid "error"])
+                           ])
+  in
+
+  decl_fun @@ decl_error @@ decl_ans @@ call_helper @@ decl_unreferror @@
+  Exp.(ifthenelse (apply (ident@@lid "<>") [ ("", ident@@lid "error")
+                                           ; ("", constant (Const_string ("", None)))
+                                           ])
+                  (construct (lid "Parsed") (Some (ident@@lid "ans")) )
+                  (Some (construct (lid "Failed") (Some (apply (ident@@lid "!") ["", ident@@lid "error"]) ) ) )
+  )
+
 
 
 let map_value_binding mapper (vb: value_binding) =
