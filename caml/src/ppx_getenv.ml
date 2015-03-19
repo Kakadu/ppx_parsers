@@ -5,6 +5,9 @@ open Asttypes
 open Parsetree
 open Longident
 
+module Case = struct
+  let mk ?guard pc_lhs pc_rhs = { pc_guard=guard; pc_lhs; pc_rhs }
+end
 
 let log fmt = kprintf (printf ">>> %s\n%!") fmt
 
@@ -67,20 +70,26 @@ let map_past (past: past) : Parsetree.expression =
   log "map_past";
   let open Ast_helper in
   let open Ast_convenience in
-  let rec helper = function
-    | Look str  ->
-       let match_expr = Exp.(apply (ident @@ lid "Lexer.look") [("", evar "_stream"); ("", Ast_convenience.str str)]) in
-       Exp.(match_ match_expr [])
-       (* Exp.ident (Ast_convenience.lid "str") *)
-    | OExpr e -> e
-    | _ -> Exp.ident (Ast_convenience.lid "yayaya")
-  in
-
   let decl_ref ~name valexpr cont =
     Exp.(let_ Nonrecursive
               [Vb.mk (Pat.var @@ Location.mknoloc name) (apply (ident @@ lid "ref") [("", valexpr)]) ]
               cont)
   in
+
+  let rec helper ansname = function
+    | Look str  ->
+       let match_expr = Exp.(apply (ident @@ lid "Lexer.look") [("", evar "_stream"); ("", Ast_convenience.str str)]) in
+       let cases =
+         [ Case.mk [%pat? (Some stream2)] [%expr ans := (stream2, [%e Exp.constant@@ Const_string (str,None)]) ]
+         ; Case.mk [%pat? None] [%expr error := Printf.sprintf "can't parse '%s'" [%e Exp.constant@@Const_string (str,None)]]
+         ]
+       in
+       Exp.(match_ match_expr cases)
+       (* Exp.ident (Ast_convenience.lid "str") *)
+    | OExpr e -> e
+    | _ -> Exp.ident (Ast_convenience.lid "yayaya")
+  in
+
   let decl_fun cont = Exp.(fun_ "" None (pvar "_stream") cont) in
   let decl_error = decl_ref ~name:"error" @@ Exp.constant (Const_string ("", None)) in
 (*  let decl_ans cont =
@@ -88,9 +97,10 @@ let map_past (past: past) : Parsetree.expression =
   in
  *)
   let decl_ans = decl_ref ~name:"ans" @@
-                   Exp.(apply (ident@@lid "Obj.magic") ["", construct (lid "()") None])
+                   [%expr (Stream.empty, Obj.magic ())]
+                   (* Exp.(apply (ident@@lid "Obj.magic") ["", construct (lid "()") None]) *)
   in
-  let call_helper = Exp.(let_ Nonrecursive [Vb.mk (Pat.var @@Location.mknoloc "()") (helper past) ]) in
+  let call_helper = Exp.(let_ Nonrecursive [Vb.mk (Pat.var @@Location.mknoloc "()") (helper "ans" past) ]) in
   let decl_unreferror =
     Exp.(let_ Nonrecursive [ Vb.mk (Pat.var @@ Location.mknoloc "error")
                                    (apply (ident@@lid "!") ["", ident@@lid "error"])
@@ -98,12 +108,7 @@ let map_past (past: past) : Parsetree.expression =
   in
 
   decl_fun @@ decl_error @@ decl_ans @@ call_helper @@ decl_unreferror @@
-  Exp.(ifthenelse (apply (ident@@lid "<>") [ ("", ident@@lid "error")
-                                           ; ("", constant (Const_string ("", None)))
-                                           ])
-                  (construct (lid "Parsed") (Some (ident@@lid "ans")) )
-                  (Some (construct (lid "Failed") (Some (apply (ident@@lid "!") ["", ident@@lid "error"]) ) ) )
-  )
+  [%expr if error = "" then Parsed (snd !ans, (), fst !ans) else Failed error]
 
 
 
@@ -133,7 +138,6 @@ let struct_item_mapper argv =
   }
 
 let getenv_mapper argv =
-  (* Our getenv_mapper only overrides the handling of expressions in the default mapper. *)
   let ans = { default_mapper with
     module_binding = fun mapper mb ->
       match mb with
