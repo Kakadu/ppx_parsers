@@ -30,6 +30,7 @@ type past =
   | Look of string
   | Alt of past * past
   | AltList of past list
+  | Map of past * Parsetree.expression
 
 let rec parse_past root =
   let rec helper : Parsetree.expression -> past = fun root ->
@@ -40,6 +41,7 @@ let rec parse_past root =
                   [_, {pexp_desc=Pexp_constant (Const_string (patt,_)); _}]) ->
        (* log "Look with patt = '%s' found." patt; *)
        Look patt
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "-->"; _ }; _}, [(_,l); (_,r)]) -> Map (helper l, r)
     | _ -> OExpr root
   in helper root
 
@@ -90,18 +92,37 @@ let map_past (past: past) : Parsetree.expression =
               cont)
   in
 
-  let rec helper ansname = function
-    | Look str  ->
+  let make_var =
+    let counter = ref 1 in
+    (fun () -> incr counter; sprintf "_ans%d" !counter)
+  in
+  let rec helper ans_name = function
+    | Look str   ->
        let match_expr = Exp.(apply (ident @@ lid "Lexer.look") [("", evar "_stream"); ("", Ast_convenience.str str)]) in
        let cases =
-         [ Case.mk [%pat? (Some stream2)] [%expr ans := (stream2, [%e Exp.constant@@ Const_string (str,None)]) ]
+         [ Case.mk [%pat? (Some stream2)]
+                   [%expr [%e Exp.(ident@@lid ans_name)] := (stream2, [%e Exp.constant@@ Const_string (str,None)]) ]
          ; Case.mk [%pat? None] [%expr error := Printf.sprintf "can't parse '%s'" [%e Exp.constant@@Const_string (str,None)]]
          ]
        in
        Exp.(match_ match_expr cases)
        (* Exp.ident (Ast_convenience.lid "str") *)
-    | Alt (l,r) -> [%expr let () = [%e helper ansname l] in
-                          if !error<>"" then let () = error:="" in [%e helper ansname r] ]
+    | Alt (l,r) -> [%expr let () = [%e helper ans_name l] in
+                          if !error<>"" then let () = error:="" in [%e helper ans_name r] ]
+    | Map (last,rexpr) ->
+       let temp_var_name = make_var () in
+       let temp_var_decl cont =
+         Exp.(let_ Nonrecursive
+                   [Vb.mk (Pat.var @@ Location.mknoloc temp_var_name) [%expr ref (Lexer.create "", Obj.magic ()) ] ]
+                   cont)
+       in
+       let temp_ans_ast = [%expr ! [%e Exp.(ident@@lid temp_var_name) ] ] in
+       temp_var_decl @@ [%expr let _ = "call left there" in
+                               let () = [%e helper temp_var_name last] in
+                               if !error=""
+                               then [%e Exp.(ident@@lid ans_name)] := ( fst [%e temp_ans_ast]
+                                                                      , [%e rexpr] @@ snd [%e temp_ans_ast]) ]
+
     | OExpr e -> e
     | _ -> Exp.ident (Ast_convenience.lid "yayaya")
   in

@@ -9,6 +9,6 @@ if [ $? != 0 ]; then
 fi
 
 set -xe
-ocamlfind ppx_tools/rewriter ../_build/src/ppx_getenv.native a.ml
+ocamlfind ppx_tools/rewriter ../_build/src/ppx_getenv.native b.ml
 #set +xe
 exit $?
