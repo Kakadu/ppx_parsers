@@ -1,5 +1,5 @@
 PKG compiler-libs
-PKG ppx_tools
+PKG ppx_tools ppx_tools.metaquot
 
 S src
 B _build
