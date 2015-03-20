@@ -1,3 +1,17 @@
+(**
+ *  Some experiments with parser-combinators
+ *
+ *  Example:
+ *  module ASDF1  = struct
+ *    include Comb.Make(Lexer.SimpleStream)
+ *    module Lexer = Lexer.SimpleStream (* TODO: move it to functor *)
+ *    let f = (look "true") [@@parser]
+ *  end [@@parsers]
+ *
+ *  Syntax extension sees [@@parsers] and clones this module into two. 1st one has the same name and contains
+ *  modified parser where parser function were a little but rewritten as recursive descent. 2nd one is renamed
+ *  original parser with removed attributes inside the module.
+ *)
 open Printf
 open Ast_mapper
 open Ast_helper
@@ -24,17 +38,16 @@ let rec parse_past root =
        Alt (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "look"; _ }; _},
                   [_, {pexp_desc=Pexp_constant (Const_string (patt,_)); _}]) ->
-       log "Look with patt = '%s' found." patt;
+       (* log "Look with patt = '%s' found." patt; *)
        Look patt
     | _ -> OExpr root
   in helper root
 
-let getenv s = try Sys.getenv s with Not_found -> ""
-
-let is_a_parser attrs = List.fold_left (fun acc -> function ({txt="parser"; _},_) -> true | _ -> acc)  false attrs
-let remove_parser_attr = List.filter (function ({txt="parser"; _},_) -> false | _ -> true)
-
-let () = log "PPX_PARSERS"
+let rec has_attr name = List.fold_left (fun acc -> function ({txt; _},_) when txt=name -> true | _ -> acc)  false
+let is_a_parser = has_attr "parser"
+let remove_attr name = List.filter (fun ({txt;_},_) -> txt<>name)
+let remove_parser_attr = remove_attr "parser"
+let remove_parsers_attr = remove_attr "parsers"
 
 let is_good_value_binding vb =
   (is_a_parser vb.pvb_attributes)
@@ -66,6 +79,7 @@ let map_expr_body mapper expr =
       ans
     end *)
 
+(* Ast evaluation and unfolding parser-combinators into recursive descent is there *)
 let map_past (past: past) : Parsetree.expression =
   log "map_past";
   let open Ast_helper in
@@ -111,42 +125,48 @@ let map_past (past: past) : Parsetree.expression =
   decl_fun @@ decl_error @@ decl_ans @@ call_helper @@ decl_unreferror @@
   [%expr if error = "" then Parsed (snd !ans, (), fst !ans) else Failed ()]
 
-
-
-let map_value_binding mapper (vb: value_binding) =
-  assert (is_good_value_binding vb);
-  let name =
-    match vb.pvb_pat.ppat_desc with
-    | Ppat_var ({txt; _}) -> txt
-    | _ -> assert false
+(* Just erase parser attributes from parser functions there there *)
+let struct_item_parser_eraser _args : Ast_mapper.mapper =
+  let map_value_binding mapper (vb: value_binding) =
+    assert (is_good_value_binding vb);
+    let name =
+      match vb.pvb_pat.ppat_desc with
+      | Ppat_var ({txt; _}) -> txt
+      | _ -> assert false
+    in
+    log "Found a value binding for erasing '%s'" name;
+    { vb with pvb_attributes=remove_parser_attr vb.pvb_attributes }
   in
-  log "Found a value binding '%s'" name;
-  let newbody = map_past (parse_past vb.pvb_expr) in
-  { {vb with pvb_expr = newbody } with pvb_attributes=remove_parser_attr vb.pvb_attributes }
-  (* { {vb with pvb_expr = map_expr_body mapper vb.pvb_expr } with pvb_attributes=remove_parser_attr vb.pvb_attributes } *)
-
-
-let struct_item_mapper argv =
-  log "struct_item_mapper ";
   { default_mapper with
     structure_item = fun mapper sitem ->
       match sitem.pstr_desc with
       | Pstr_value (_rec,xs) ->
-         log "1";
          let f vb = if is_good_value_binding vb then map_value_binding mapper vb else vb in
          { sitem with pstr_desc =  Pstr_value (_rec, List.map f xs) }
       | x -> default_mapper.structure_item mapper sitem
   }
 
-let () = register "getenv" struct_item_mapper
-
-(*
-let rec has_attr name: Parsetree.attributes -> bool = function
-  | [] -> false
-  | ({txt;loc},_) :: _ when txt = name -> true
-  | _ :: xs -> has_attr name xs
-
-let remove_parsers_attr = List.filter (fun ({txt;_},_) -> txt<>"parsers")
+(* map structure_item with parser generation *)
+let struct_item_mapper args : Ast_mapper.mapper =
+  let map_value_binding mapper (vb: value_binding) =
+    assert (is_good_value_binding vb);
+    let name =
+      match vb.pvb_pat.ppat_desc with
+      | Ppat_var ({txt; _}) -> txt
+      | _ -> assert false
+    in
+    log "Found a value binding '%s'" name;
+    let newbody = map_past (parse_past vb.pvb_expr) in
+    { {vb with pvb_expr = newbody } with pvb_attributes=remove_parser_attr vb.pvb_attributes }
+  in
+  { default_mapper with
+    structure_item = fun mapper sitem ->
+      match sitem.pstr_desc with
+      | Pstr_value (_rec,xs) ->
+         let f vb = if is_good_value_binding vb then map_value_binding mapper vb else vb in
+         { sitem with pstr_desc =  Pstr_value (_rec, List.map f xs) }
+      | x -> default_mapper.structure_item mapper sitem
+  }
 
 let module_duplicate_mapper argv =
   { default_mapper with structure =
@@ -155,10 +175,17 @@ let module_duplicate_mapper argv =
         match items with
         | { pstr_desc=Pstr_module mb; pstr_loc } :: rest when has_attr "parsers" mb.pmb_attributes ->
            let old_ = {mb with pmb_attributes = remove_parsers_attr mb.pmb_attributes } in
-           let new_ = {old_ with pmb_name = Location.mknoloc (old_.pmb_name.txt^"_orig") } in
+           let new_ =
+             let new_ = {old_ with pmb_name = Location.mknoloc (old_.pmb_name.txt^"_orig") } in
+             let new_ = {pstr_desc=Pstr_module new_; pstr_loc} in
+             let useful_mapper = struct_item_parser_eraser [] in
+             useful_mapper.structure_item useful_mapper new_
+           in
+           (* Invesigate parser functions now *)
            let old_ = {pstr_desc=Pstr_module old_; pstr_loc} in
-           let old_ = (struct_item_mapper Sys.argv).structure_item mapper old_ in
-           old_ :: {pstr_desc=Pstr_module new_; pstr_loc} :: (iter rest)
+           let useful_mapper = struct_item_mapper [] in
+           let old_ = useful_mapper.structure_item useful_mapper old_ in
+           old_ :: new_ :: (iter rest)
         | { pstr_loc } as item :: rest ->
            mapper.structure_item mapper item :: iter rest
         | [] -> []
@@ -167,4 +194,3 @@ let module_duplicate_mapper argv =
   }
 
 let () = register "module_duplicate" module_duplicate_mapper
- *)
