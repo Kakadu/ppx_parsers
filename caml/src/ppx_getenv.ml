@@ -106,7 +106,7 @@ let map_past (past: past) : Parsetree.expression =
          ]
        in
        Exp.(match_ match_expr cases)
-       (* Exp.ident (Ast_convenience.lid "str") *)
+
     | Alt (l,r) -> [%expr let () = [%e helper ans_name l] in
                           if !error<>"" then let () = error:="" in [%e helper ans_name r] ]
     | Map (last,rexpr) ->
@@ -127,17 +127,10 @@ let map_past (past: past) : Parsetree.expression =
     | _ -> Exp.ident (Ast_convenience.lid "yayaya")
   in
 
-  let decl_fun cont = Exp.(fun_ "" None (pvar "_stream") cont) in
-  let decl_error = decl_ref ~name:"error" @@ Exp.constant (Const_string ("", None)) in
-(*  let decl_ans cont =
-    Exp.let_ Nonrecursive [Vb.mk (Pat.var @@ Location.mknoloc "ans") (helper past)] cont
-  in
- *)
-  let decl_ans = decl_ref ~name:"ans" @@
-                   [%expr (Lexer.create "", Obj.magic ())]
-                   (* Exp.(apply (ident@@lid "Obj.magic") ["", construct (lid "()") None]) *)
-  in
-  let call_helper = Exp.(let_ Nonrecursive [Vb.mk (Pat.var @@Location.mknoloc "()") (helper "ans" past) ]) in
+  let decl_fun cont = [%expr fun _stream -> [%e cont ] ] in
+  let decl_error cont = [%expr let error = ref "" in [%e cont] ] in
+  let decl_ans cont = [%expr let ans = ref (Lexer.create "", Obj.magic ()) in [%e cont] ]  in
+  let call_helper cont = [%expr let () = [%e (helper "ans" past) ] in [%e cont] ]  in
   let decl_unreferror =
     Exp.(let_ Nonrecursive [ Vb.mk (Pat.var @@ Location.mknoloc "error")
                                    (apply (ident@@lid "!") ["", ident@@lid "error"])
