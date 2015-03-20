@@ -138,31 +138,33 @@ let struct_item_mapper argv =
       | x -> default_mapper.structure_item mapper sitem
   }
 
-let getenv_mapper argv =
-  let ans = { default_mapper with
-    module_binding = fun mapper mb ->
-      match mb with
-      (* Is this an extension node? *)
-      | { pmb_attributes = [ ({ txt = "parsers"; loc }, _) as attr ] }  ->
-         printf "Good module is found!\n%!";
-         let attr2 = ({ (fst attr) with txt="parsers2" }, snd attr) in
-         default_mapper.module_binding mapper { mb with pmb_attributes = [attr2] }
-        (* begin match pstr with *)
-        (* | (\* Should have a single structure item, which is evaluation of a constant string. *\) *)
-        (*   PStr [{ pstr_desc = *)
-        (*           Pstr_eval ({ pexp_loc  = loc; *)
-        (*                        pexp_desc = Pexp_constant (Const_string (sym, None))}, _)}] -> *)
-        (*   (\* Replace with a constant string with the value from the environment. *\) *)
-        (*   Exp.constant ~loc (Const_string (getenv sym, None)) *)
-        (* | _ -> *)
-        (*   raise (Location.Error ( *)
-        (*           Location.error ~loc "[%getenv] accepts a string, e.g. [%getenv \"USER\"]")) *)
-        (* end *)
-      (* Delegate to the default mapper. *)
-      | x -> default_mapper.module_binding mapper x
-  }
-  in
-  ans
-
-
 let () = register "getenv" struct_item_mapper
+
+(*
+let rec has_attr name: Parsetree.attributes -> bool = function
+  | [] -> false
+  | ({txt;loc},_) :: _ when txt = name -> true
+  | _ :: xs -> has_attr name xs
+
+let remove_parsers_attr = List.filter (fun ({txt;_},_) -> txt<>"parsers")
+
+let module_duplicate_mapper argv =
+  { default_mapper with structure =
+    fun mapper items ->
+      let rec iter items =
+        match items with
+        | { pstr_desc=Pstr_module mb; pstr_loc } :: rest when has_attr "parsers" mb.pmb_attributes ->
+           let old_ = {mb with pmb_attributes = remove_parsers_attr mb.pmb_attributes } in
+           let new_ = {old_ with pmb_name = Location.mknoloc (old_.pmb_name.txt^"_orig") } in
+           let old_ = {pstr_desc=Pstr_module old_; pstr_loc} in
+           let old_ = (struct_item_mapper Sys.argv).structure_item mapper old_ in
+           old_ :: {pstr_desc=Pstr_module new_; pstr_loc} :: (iter rest)
+        | { pstr_loc } as item :: rest ->
+           mapper.structure_item mapper item :: iter rest
+        | [] -> []
+      in
+      iter items
+  }
+
+let () = register "module_duplicate" module_duplicate_mapper
+ *)
