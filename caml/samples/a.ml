@@ -5,7 +5,6 @@ module ASDF1  = struct
 
 
   let f = (look "true") <|> (look "false") [@@parser]
+  (* let f = (look "true") [@@parser] *)
 
-end
-
-
+end [@@parsers]
