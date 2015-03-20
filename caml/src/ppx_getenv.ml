@@ -86,6 +86,7 @@ let map_past (past: past) : Parsetree.expression =
        in
        Exp.(match_ match_expr cases)
        (* Exp.ident (Ast_convenience.lid "str") *)
+    | Alt (l,r) -> [%expr let () = [%e helper ansname l] in if !error<>"" then [%e helper ansname r] ]
     | OExpr e -> e
     | _ -> Exp.ident (Ast_convenience.lid "yayaya")
   in
@@ -97,7 +98,7 @@ let map_past (past: past) : Parsetree.expression =
   in
  *)
   let decl_ans = decl_ref ~name:"ans" @@
-                   [%expr (Stream.empty, Obj.magic ())]
+                   [%expr (Lexer.create "", Obj.magic ())]
                    (* Exp.(apply (ident@@lid "Obj.magic") ["", construct (lid "()") None]) *)
   in
   let call_helper = Exp.(let_ Nonrecursive [Vb.mk (Pat.var @@Location.mknoloc "()") (helper "ans" past) ]) in
@@ -108,7 +109,7 @@ let map_past (past: past) : Parsetree.expression =
   in
 
   decl_fun @@ decl_error @@ decl_ans @@ call_helper @@ decl_unreferror @@
-  [%expr if error = "" then Parsed (snd !ans, (), fst !ans) else Failed error]
+  [%expr if error = "" then Parsed (snd !ans, (), fst !ans) else Failed ()]
 
 
 
