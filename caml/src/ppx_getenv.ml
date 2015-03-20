@@ -100,7 +100,8 @@ let map_past (past: past) : Parsetree.expression =
        in
        Exp.(match_ match_expr cases)
        (* Exp.ident (Ast_convenience.lid "str") *)
-    | Alt (l,r) -> [%expr let () = [%e helper ansname l] in if !error<>"" then [%e helper ansname r] ]
+    | Alt (l,r) -> [%expr let () = [%e helper ansname l] in
+                          if !error<>"" then let () = error:="" in [%e helper ansname r] ]
     | OExpr e -> e
     | _ -> Exp.ident (Ast_convenience.lid "yayaya")
   in

@@ -4,7 +4,8 @@ module ASDF1  = struct
   module Lexer = Lexer.SimpleStream (* TODO: move it to functor *)
 
 
-  let f = (look "true") <|> (look "false") [@@parser]
-  (* let f = (look "true") [@@parser] *)
+  let g = (look "true") <|> (look "false") [@@parser]
+  let f = (look "true") [@@parser]
+
 
 end [@@parsers]
