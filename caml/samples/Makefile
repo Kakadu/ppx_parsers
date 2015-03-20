@@ -24,7 +24,7 @@ a.cmo: a.ml
 
 b.cmo: lexer.cmo
 b.cmo: b.ml
-	$(OCAMLC) -ppx ../_build/src/ppx_getenv.native -dsource -c $<
+	$(OCAMLC) -ppx ../_build/src/ppx_getenv.native -c $<
 
 test.cmo: a.cmo
 test.cmo: OCAMLC += -package oUnit
