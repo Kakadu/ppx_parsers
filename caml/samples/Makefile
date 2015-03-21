@@ -2,11 +2,19 @@ OCAMLC=ocamlfind c -g -I 1
 OUT=demo
 OUT_TEST=test
 TEST_NAMES=a b c d
-TEST_CMOS=$(addsuf fix .cmo,$(TEST_NAMES) )
+TEST_CMOS=$(addsuffix .cmo,$(TEST_NAMES) )
 
 .PHONY: all clean
 
 all: $(OUT)
+
+define TEST_RULES
+test.cmo: $(1).cmo
+$(1).cmo: $(1).ml lexer.cmo
+	$(OCAMLC) -ppx ../_build/src/ppx_getenv.native -c $(1).ml
+endef
+
+$(foreach i,$(TEST_NAMES),$(eval $(call TEST_RULES,$(i)) ) )
 
 $(OUT): lexer.cmo comb.cmo $(TEST_CMOS) demo.cmo
 	$(OCAMLC) -linkpkg $^ -o $(OUT)
@@ -40,13 +48,5 @@ comb.cmo:
 
 clean:
 	$(RM) *.cm[iox] *.o $(OUT)
-
-define TEST_RULES
-test.cmo: $(1).cmo
-$(1).cmo: $(1).ml lexer.cmo
-	$(OCAMLC) -ppx ../_build/src/ppx_getenv.native -c $(1).ml
-endef
-
-$(foreach i,$(TEST_NAMES),$(eval $(call TEST_RULES,$(i)) ) )
 
 # TODO: when  we change ppx_...native files are not recompiled. FIX it!
