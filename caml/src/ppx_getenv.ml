@@ -29,7 +29,8 @@ type past =
   | OExpr of Parsetree.expression
   | Look of string
   | Alt of past * past
-  | AltList of past list
+  | Many of past
+  (* | AltList of past list *)
   | Map of past * Parsetree.expression
 
 let rec parse_past root =
@@ -42,6 +43,7 @@ let rec parse_past root =
        (* log "Look with patt = '%s' found." patt; *)
        Look patt
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "-->"; _ }; _}, [(_,l); (_,r)]) -> Map (helper l, r)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "many"; _ }; _}, [(_,l)]) -> Many (helper l)
     | _ -> OExpr root
   in helper root
 
@@ -86,59 +88,80 @@ let map_past (past: past) : Parsetree.expression =
   log "map_past";
   let open Ast_helper in
   let open Ast_convenience in
-  let decl_ref ~name valexpr cont =
-    Exp.(let_ Nonrecursive
-              [Vb.mk (Pat.var @@ Location.mknoloc name) (apply (ident @@ lid "ref") [("", valexpr)]) ]
-              cont)
-  in
+  (* let decl_ref ~name valexpr cont = *)
+  (*   Exp.(let_ Nonrecursive *)
+  (*             [Vb.mk (Pat.var @@ Location.mknoloc name) (apply (ident @@ lid "ref") [("", valexpr)]) ] *)
+  (*             cont) *)
+  (* in *)
 
-  let make_var =
-    let counter = ref 1 in
-    (fun () -> incr counter; sprintf "_ans%d" !counter)
+  let (make_var, make_vars) =
+    let counter = ref 0 in
+    ( (fun () -> incr counter; sprintf "_ans%d" !counter)
+    , (fun () -> incr counter; (sprintf "_ans%d" !counter, sprintf "_stream%d" !counter) )
+    )
   in
-  let rec helper ans_name = function
+  let rec helper ans_name ans_stream = function
     | Look str   ->
-       let match_expr = Exp.(apply (ident @@ lid "Lexer.look") [("", evar "_stream"); ("", Ast_convenience.str str)]) in
-       let cases =
-         [ Case.mk [%pat? (Some stream2)]
-                   [%expr [%e Exp.(ident@@lid ans_name)] := (stream2, [%e Exp.constant@@ Const_string (str,None)]) ]
-         ; Case.mk [%pat? None] [%expr error := Printf.sprintf "can't parse '%s'" [%e Exp.constant@@Const_string (str,None)]]
-         ]
-       in
-       Exp.(match_ match_expr cases)
+       let ans_ast = evar ans_name in
+       let ans_stream_ast = evar ans_stream in
+       [%expr match Lexer.look (! [%e ans_stream_ast]) [%e Ast_convenience.str str] with
+              | Some new_stream -> [%e ans_ast]        := [%e Ast_convenience.str str];
+                                   [%e ans_stream_ast] := new_stream
+              | None ->  error := Printf.sprintf "can't parse '%s'" [%e Exp.constant@@Const_string (str,None)]
+       ]
 
-    | Alt (l,r) -> [%expr let () = [%e helper ans_name l] in
-                          if !error<>"" then let () = error:="" in [%e helper ans_name r] ]
-    | Map (last,rexpr) ->
-       let temp_var_name = make_var () in
-       let temp_var_decl cont =
-         Exp.(let_ Nonrecursive
-                   [Vb.mk (Pat.var @@ Location.mknoloc temp_var_name) [%expr ref (Lexer.create "", Obj.magic ()) ] ]
-                   cont)
-       in
-       let temp_ans_ast = [%expr ! [%e Exp.(ident@@lid temp_var_name) ] ] in
-       temp_var_decl @@ [%expr let _ = "call left there" in
-                               let () = [%e helper temp_var_name last] in
-                               if !error=""
-                               then [%e Exp.(ident@@lid ans_name)] := ( fst [%e temp_ans_ast]
-                                                                      , [%e rexpr] @@ snd [%e temp_ans_ast]) ]
+    | Alt (l,r) ->
+       let (_,temp_stream) = make_vars () in
+       [%expr let [%p pvar temp_stream ] = [%e evar ans_stream] in
+              let () = [%e helper ans_name temp_stream l] in
+              if !error<>"" then begin
+                  [%e evar temp_stream] := ! [%e evar ans_stream];
+                  let () = [%e helper ans_name temp_stream r] in
+                  if !error="" then begin
+                      [%e evar ans_stream] := ! [%e evar temp_stream];
+                    end
+                end
+       ]
+    | Map (l_ast,r_expr) ->
+       log "map result is found!";
+       let temp_ans_name,temp_stream_name = make_vars () in
+       [%expr let [%p pvar temp_ans_name ] = ref (Obj.magic()) in
+              let [%p pvar temp_stream_name ] = [%e evar ans_stream] in
+              let () = [%e helper temp_ans_name temp_stream_name l_ast] in
+              if !error="" then begin
+                  [%e evar ans_stream] := ! [%e evar temp_stream_name];
+                  [%e evar ans_name]   := [%e r_expr] (! [%e evar temp_ans_name]);
+                end]
 
+    | Many past ->
+       let temp_ans_name,temp_stream_name = make_vars () in
+       let temp_ans_xs_name = make_var () in
+       [%expr let [%p pvar temp_ans_name ] = ref (Obj.magic ()) in
+              let [%p pvar temp_stream_name ] = ref (! [%e evar ans_stream]) in
+              let [%p pvar temp_ans_xs_name ] = ref [] in
+              let rec loop () =
+                let () = [%e helper temp_ans_name temp_stream_name past] in
+                if !error="" then begin
+                    [%e evar temp_ans_xs_name] := ! [%e evar temp_ans_name] :: ! [%e evar temp_ans_xs_name];
+                    loop ()
+                  end else ( [%e evar ans_name] := List.rev ! [%e evar temp_ans_xs_name];
+                             [%e evar ans_stream] := ! [%e evar temp_stream_name];
+                             error := ""
+                           )
+              in
+              loop ()
+       ]
     | OExpr e -> e
-    | _ -> Exp.ident (Ast_convenience.lid "yayaya")
   in
 
-  let decl_fun cont = [%expr fun _stream -> [%e cont ] ] in
-  let decl_error cont = [%expr let error = ref "" in [%e cont] ] in
-  let decl_ans cont = [%expr let ans = ref (Lexer.create "", Obj.magic ()) in [%e cont] ]  in
-  let call_helper cont = [%expr let () = [%e (helper "ans" past) ] in [%e cont] ]  in
-  let decl_unreferror =
-    Exp.(let_ Nonrecursive [ Vb.mk (Pat.var @@ Location.mknoloc "error")
-                                   (apply (ident@@lid "!") ["", ident@@lid "error"])
-                           ])
-  in
+  [%expr fun _stream ->
+         let error = ref "" in
+         let ans = ref (Obj.magic ()) in
+         let cur_stream = ref _stream in
+         let () = [%e (helper "ans" "cur_stream" past)] in
+         if !error="" then Parsed(!ans, (), !cur_stream) else Failed ()
+  ]
 
-  decl_fun @@ decl_error @@ decl_ans @@ call_helper @@ decl_unreferror @@
-  [%expr if error = "" then Parsed (snd !ans, (), fst !ans) else Failed ()]
 
 (* Just erase parser attributes from parser functions there there *)
 let struct_item_parser_eraser _args : Ast_mapper.mapper =
