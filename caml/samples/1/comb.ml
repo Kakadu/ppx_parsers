@@ -31,6 +31,7 @@ module type PARSERS = sig
     val (@~>): 'a parser -> 'b parser -> 'b parser
     val (<~@): 'a parser -> 'b parser -> 'a parser
     val many_fold: ('init -> 'a -> 'init) -> 'init -> 'a parser -> 'init parser
+    val many: 'a parser -> 'a list parser
     val number: int parser
     val list0:  'a parser -> 'b parser -> 'a list parser
     val listBy: 'a parser -> 'b parser -> 'a list parser
