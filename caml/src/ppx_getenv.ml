@@ -132,18 +132,16 @@ let map_past (past: past) : Parsetree.expression =
                 end
        ]
     | Right (l_ast,r_ast) ->
-      (* log "@~> is processed"; *)
       let (l_ans, temp_stream) = make_vars () in
       let r_ans = make_var () in
       [%expr let [%p pvar temp_stream] = [%e evar ans_stream] in
-             let [%p pvar l_ans]       = [%e Obj.magic() ] in
+             let [%p pvar l_ans]       = ref (Obj.magic()) in
              let () = [%e helper l_ans temp_stream l_ast] in
              if !error="" then begin
-               let [%p pvar r_ans]       = [%e Obj.magic() ] in
+               let [%p pvar r_ans]     = ref (Obj.magic()) in
                let () = [%e helper r_ans temp_stream r_ast] in
-               ()
-               (* (if !error="" then ([%e evar ans_stream] := ![%e evar temp_stream]; *)
-               (*                     [%e evar ans_name  ] := ![%e evar r_ans])) *)
+               (if !error="" then ([%e evar ans_stream] := ![%e evar temp_stream];
+                                   [%e evar ans_name  ] := ![%e evar r_ans]))
              end
       ]
     | Left  (l_ast,r_ast) ->
