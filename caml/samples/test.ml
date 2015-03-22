@@ -86,7 +86,10 @@ let magic_wrap ~input should_success (module New: TEST_PARSER) (module Orig: TES
 
 let suite =
   "allfuns" >:::
-  [ "1">:: (fun _ctx ->  magic_wrap ~input:"true"  true  (module A.ASDF1) (module A.ASDF1_orig) )
+  [ "0">:: (fun _ctx ->
+             let module L = TestLexer.SimpleStream in
+             let l = L.create "" in assert_bool "Lexer.is_finished" (L.is_finished l) )
+  ; "1">:: (fun _ctx ->  magic_wrap ~input:"true"  true  (module A.ASDF1) (module A.ASDF1_orig) )
   ; "2">:: (fun _ctx ->  magic_wrap ~input:"tru1e" false (module A.ASDF1) (module A.ASDF1_orig) )
 
   ; "3">:: (fun _ctx ->  magic_wrap ~input:"true"  true  (module B.ASDF1) (module B.ASDF1_orig) )
