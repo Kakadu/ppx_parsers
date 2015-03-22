@@ -16,6 +16,9 @@ module SimpleStream : Comb.STREAM = struct
        in
        if checker pattlen 0 n then Some (n+pattlen, s) else None
      end
+ let rec skip_ws ((n,s) as stream) =
+   if is_finished stream then stream
+   else match s.[n] with ' '|'\n' | '\t' -> skip_ws (n+1,s) | _ -> stream
 end
 
 module Expr1 = struct

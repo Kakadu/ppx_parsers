@@ -1,7 +1,7 @@
 
 module ASDF1  = struct
-  include Comb.Make(Lexer.SimpleStream)
-  module Lexer = Lexer.SimpleStream
+  include Comb.Make(TestLexer.SimpleStream)
+  module Lexer = TestLexer.SimpleStream
 
   let main = (look "true") --> ( (^)"1") [@@parser]
 

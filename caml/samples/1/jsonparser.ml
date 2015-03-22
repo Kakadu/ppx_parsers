@@ -18,6 +18,10 @@ module SimpleStream  = struct
        if checker pattlen 0 n then Some (n+pattlen, s) else None
      end
 
+ let rec skip_ws ((n,s) as stream) =
+   if is_finished stream then stream
+   else match s.[n] with ' '|'\n' | '\t' -> skip_ws (n+1,s) | _ -> stream
+
  let string_literal ((cur_pos,s) as stream) =
    if is_finished stream then None else
    let input_len = String.length s in

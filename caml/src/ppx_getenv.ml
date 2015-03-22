@@ -85,7 +85,6 @@ let map_expr_body mapper expr =
 
 (* Ast evaluation and unfolding parser-combinators into recursive descent is there *)
 let map_past (past: past) : Parsetree.expression =
-  log "map_past";
   let open Ast_helper in
   let open Ast_convenience in
   (* let decl_ref ~name valexpr cont = *)
@@ -102,11 +101,12 @@ let map_past (past: past) : Parsetree.expression =
   in
   let rec helper ans_name ans_stream = function
     | Look str   ->
-       let ans_ast = evar ans_name in
-       let ans_stream_ast = evar ans_stream in
-       [%expr match Lexer.look (! [%e ans_stream_ast]) [%e Ast_convenience.str str] with
-              | Some new_stream -> [%e ans_ast]        := [%e Ast_convenience.str str];
-                                   [%e ans_stream_ast] := new_stream
+       (* We generate some code which skip names*)
+       let temp_stream = make_var () in
+       [%expr let [%p pvar temp_stream] = Lexer.skip_ws ! [%e evar ans_stream] in
+              match Lexer.look [%e evar temp_stream] [%e Ast_convenience.str str] with
+              | Some new_stream -> [%e evar ans_name]   := [%e Ast_convenience.str str];
+                                   [%e evar ans_stream] := new_stream
               | None ->  error := Printf.sprintf "can't parse '%s'" [%e Exp.constant@@Const_string (str,None)]
        ]
 
@@ -123,7 +123,7 @@ let map_past (past: past) : Parsetree.expression =
                 end
        ]
     | Map (l_ast,r_expr) ->
-       log "map result is found!";
+       (* log "map result is found!"; *)
        let temp_ans_name,temp_stream_name = make_vars () in
        [%expr let [%p pvar temp_ans_name ] = ref (Obj.magic()) in
               let [%p pvar temp_stream_name ] = [%e evar ans_stream] in
@@ -172,7 +172,6 @@ let struct_item_parser_eraser _args : Ast_mapper.mapper =
       | Ppat_var ({txt; _}) -> txt
       | _ -> assert false
     in
-    log "Found a value binding for erasing '%s'" name;
     { vb with pvb_attributes=remove_parser_attr vb.pvb_attributes }
   in
   { default_mapper with

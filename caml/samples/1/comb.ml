@@ -8,6 +8,7 @@ module type STREAM = sig
    (*val forward: t -> int -> t*)
    (* TODO: add memoize maybe *)
    val position: t -> int
+   val skip_ws: t -> t
 end
 
 type associvity = [ `Lefta | `Righta | `Nona ]
