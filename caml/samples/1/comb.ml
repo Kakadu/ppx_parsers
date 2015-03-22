@@ -29,7 +29,9 @@ module type PARSERS = sig
     val opt: 'a parser -> 'a option parser
     val lift : stream -> unit r
     val (>>=): 'a parser -> ('a -> 'b parser) -> 'b parser
+    (** Return result of right parser *)
     val (@~>): 'a parser -> 'b parser -> 'b parser
+    (** Return result of left parser *)
     val (<~@): 'a parser -> 'b parser -> 'a parser
     val many_fold: ('init -> 'a -> 'init) -> 'init -> 'a parser -> 'init parser
     val many: 'a parser -> 'a list parser
@@ -37,6 +39,8 @@ module type PARSERS = sig
     val list0:  'a parser -> 'b parser -> 'a list parser
     val listBy: 'a parser -> 'b parser -> 'a list parser
     val whitespaces: unit parser
+    val wss: unit parser
+
 
     val expr:  ('a parser -> 'a parser) ->
                ([ `Lefta | `Nona | `Righta ] * ('oper parser * ('a -> 'a -> 'a)) list) array ->
@@ -136,6 +140,7 @@ struct
 
   let whitespace : string parser = (look " ") <|> (look "\n") <|> (look "\t")
   let whitespaces = many_fold (fun () _ -> ()) () whitespace
+  let wss = whitespaces
 
   let map f p = p --> f
   let empty s = Parsed ((), (), s)

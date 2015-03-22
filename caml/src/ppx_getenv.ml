@@ -23,13 +23,17 @@ module Case = struct
   let mk ?guard pc_lhs pc_rhs = { pc_guard=guard; pc_lhs; pc_rhs }
 end
 
-let log fmt = kprintf (printf ">>> %s\n%!") fmt
+let log fmt = kprintf (printf "(* >>> %s *)\n%!") fmt
 
 type past =
   | OExpr of Parsetree.expression
   | Look of string
   | Alt of past * past
   | Many of past
+  | RepSep of past*past (* parse and separator *)
+  | Whitespace
+  | Left  of past*past
+  | Right of past*past
   (* | AltList of past list *)
   | Map of past * Parsetree.expression
 
@@ -42,8 +46,12 @@ let rec parse_past root =
                   [_, {pexp_desc=Pexp_constant (Const_string (patt,_)); _}]) ->
        (* log "Look with patt = '%s' found." patt; *)
        Look patt
-    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "-->"; _ }; _}, [(_,l); (_,r)]) -> Map (helper l, r)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "-->"; _ }; _}, [(_,l); (_,r)]) -> Map   (helper l, r)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "@~>"; _ }; _}, [(_,l); (_,r)]) -> Right (helper l, helper r)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "<~@"; _ }; _}, [(_,l); (_,r)]) -> Left  (helper l, helper r)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "repsep"; _ }; _}, [(_,l); (_,r)]) -> RepSep (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "many"; _ }; _}, [(_,l)]) -> Many (helper l)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "ws"; _ }; _}, []) -> Whitespace
     | _ -> OExpr root
   in helper root
 
@@ -101,6 +109,7 @@ let map_past (past: past) : Parsetree.expression =
   in
   let rec helper ans_name ans_stream = function
     | Look str   ->
+      (* log "look for '%s'" str; *)
        (* We generate some code which skip names*)
        let temp_stream = make_var () in
        [%expr let [%p pvar temp_stream] = Lexer.skip_ws ! [%e evar ans_stream] in
@@ -122,6 +131,27 @@ let map_past (past: past) : Parsetree.expression =
                     end
                 end
        ]
+    | Right (l_ast,r_ast) ->
+      (* log "@~> is processed"; *)
+      let (l_ans, temp_stream) = make_vars () in
+      let r_ans = make_var () in
+      [%expr let [%p pvar temp_stream] = [%e evar ans_stream] in
+             let [%p pvar l_ans]       = [%e Obj.magic() ] in
+             let () = [%e helper l_ans temp_stream l_ast] in
+             if !error="" then begin
+               let [%p pvar r_ans]       = [%e Obj.magic() ] in
+               let () = [%e helper r_ans temp_stream r_ast] in
+               ()
+               (* (if !error="" then ([%e evar ans_stream] := ![%e evar temp_stream]; *)
+               (*                     [%e evar ans_name  ] := ![%e evar r_ans])) *)
+             end
+      ]
+    | Left  (l_ast,r_ast) ->
+      (* log "<~@ is processed"; *)
+      [%expr 1]
+    | RepSep(l_ast,r_ast) ->
+      [%expr 1]
+        (* assert false *)
     | Map (l_ast,r_expr) ->
        (* log "map result is found!"; *)
        let temp_ans_name,temp_stream_name = make_vars () in
@@ -151,6 +181,7 @@ let map_past (past: past) : Parsetree.expression =
               in
               loop ()
        ]
+    | Whitespace -> [%expr failwith "not implemented" ]
     | OExpr e -> e
   in
 
@@ -167,11 +198,6 @@ let map_past (past: past) : Parsetree.expression =
 let struct_item_parser_eraser _args : Ast_mapper.mapper =
   let map_value_binding mapper (vb: value_binding) =
     assert (is_good_value_binding vb);
-    let name =
-      match vb.pvb_pat.ppat_desc with
-      | Ppat_var ({txt; _}) -> txt
-      | _ -> assert false
-    in
     { vb with pvb_attributes=remove_parser_attr vb.pvb_attributes }
   in
   { default_mapper with
@@ -187,12 +213,12 @@ let struct_item_parser_eraser _args : Ast_mapper.mapper =
 let struct_item_mapper args : Ast_mapper.mapper =
   let map_value_binding mapper (vb: value_binding) =
     assert (is_good_value_binding vb);
-    let name =
-      match vb.pvb_pat.ppat_desc with
-      | Ppat_var ({txt; _}) -> txt
-      | _ -> assert false
-    in
-    log "Found a value binding '%s'" name;
+    (* let name = *)
+    (*   match vb.pvb_pat.ppat_desc with *)
+    (*   | Ppat_var ({txt; _}) -> txt *)
+    (*   | _ -> assert false *)
+    (* in *)
+    (* log "Found a value binding '%s'" name; *)
     let newbody = map_past (parse_past vb.pvb_expr) in
     { {vb with pvb_expr = newbody } with pvb_attributes=remove_parser_attr vb.pvb_attributes }
   in
