@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 COMPILE_LOG=/tmp/ppx_log
+TEST_NAME=c
 
 make -C .. --no-print-directory #2>&1 > $COMPILE_LOG
 if [ $? != 0 ]; then
@@ -9,6 +10,6 @@ if [ $? != 0 ]; then
 fi
 
 set -xe
-ocamlfind ppx_tools/rewriter ../_build/src/ppx_getenv.native g.ml
+ocamlfind ppx_tools/rewriter ../_build/src/ppx_getenv.native $TEST_NAME.ml
 #set +xe
 exit $?

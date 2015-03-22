@@ -1,8 +1,8 @@
 open Printf
-open G
+open H
 
 let () =
-  let s = " false true" in
+  let s = "{false,true,false}" in
   printf "input: '%s'\n%!" s;
   let stream = ASDF1.Lexer.create s in
   let open ASDF1 in

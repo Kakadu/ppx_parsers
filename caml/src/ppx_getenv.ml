@@ -49,7 +49,8 @@ let rec parse_past root =
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "-->"; _ }; _}, [(_,l); (_,r)]) -> Map   (helper l, r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "@~>"; _ }; _}, [(_,l); (_,r)]) -> Right (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "<~@"; _ }; _}, [(_,l); (_,r)]) -> Left  (helper l, helper r)
-    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "repsep"; _ }; _}, [(_,l); (_,r)]) -> RepSep (helper l, helper r)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "listBy"; _ }; _}, [(_,l); (_,r)]) -> RepSep (helper l, helper r)
+    (* | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "repsep"; _ }; _}, [(_,l); (_,r)]) -> RepSep (helper l, helper r) *)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "many"; _ }; _}, [(_,l)]) -> Many (helper l)
     | Pexp_ident { txt=Lident  "wss"; _ }                                      -> Whitespace
     | _ -> log "OExpr is read"; OExpr root
@@ -128,6 +129,7 @@ let map_past (past: past) : Parsetree.expression =
               let () = [%e helper ans_name temp_stream l] in
               if !error<>"" then begin
                   [%e evar temp_stream] := ! [%e evar ans_stream];
+                  error := "";
                   let () = [%e helper ans_name temp_stream r] in
                   if !error="" then begin
                       [%e evar ans_stream] := ! [%e evar temp_stream];
@@ -148,10 +150,49 @@ let map_past (past: past) : Parsetree.expression =
              end
       ]
     | Left  (l_ast,r_ast) ->
-      (* log "<~@ is processed"; *)
-      [%expr 1]
-    | RepSep(l_ast,r_ast) ->
-      [%expr 1]
+      let (l_ans, temp_stream) = make_vars () in
+      let r_ans = make_var () in
+      [%expr let [%p pvar temp_stream] = [%e evar ans_stream] in
+             let [%p pvar l_ans]       = ref (Obj.magic()) in
+             let () = [%e helper l_ans temp_stream l_ast] in
+             if !error="" then begin
+               let [%p pvar r_ans]     = ref (Obj.magic()) in
+               let () = [%e helper r_ans temp_stream r_ast] in
+               (if !error="" then ([%e evar ans_stream] := ![%e evar temp_stream];
+                                   [%e evar ans_name  ] := ![%e evar l_ans]))
+             end
+      ]
+    | RepSep(p_ast,sep_ast) ->
+      let (sep_ans,temp_stream) = make_vars () in
+      let item_ans = make_var () in
+      let item_list = make_var () ^ "xs" in
+      [%expr let [%p pvar temp_stream] = [%e evar ans_stream] in
+             let [%p pvar sep_ans]   = ref (Obj.magic()) in
+             let [%p pvar item_ans]  = ref (Obj.magic()) in
+             let [%p pvar item_list] = ref (Obj.magic()) in
+             let () = [%e helper item_ans temp_stream p_ast] in
+             if !error="" then begin
+               [%e evar item_list] := [ ! [%e evar item_ans] ];
+               let rec loop () =
+                 let save_stream: _ ref = [%e evar temp_stream] in
+                 let () = [%e helper sep_ans "save_stream" sep_ast] in
+                 if !error="" then (
+                   let () = [%e helper item_ans "save_stream" p_ast] in
+                   if !error="" then ( [%e evar item_list] := ![%e evar item_ans] :: ![%e evar item_list];
+                                       [%e evar temp_stream] := ![%e evar "save_stream"];
+                                       loop ())
+                   else ( (* can't parse `item` after parsing `sep` *)
+                     [%e evar temp_stream] := ! save_stream
+                   )
+                 ) else ( (* can' parse separator *)
+                   [%e evar temp_stream] := ! save_stream (* seems to be copy past of previous else branch *)
+                 )
+               in
+               loop ();
+               error := "";
+               [%e evar ans_name] := List.rev ! [%e evar item_list]
+             end
+      ]
         (* assert false *)
     | Map (l_ast,r_expr) ->
        (* log "map result is found!"; *)

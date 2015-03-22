@@ -8,7 +8,7 @@ module SimpleStream : Comb.STREAM = struct
  let is_finished (n,s) = n >= String.length s
  let position = fst
  let look (n,s) patt =
-   (* log "inside look from pos %d in '%s'" n s; *)
+   (* log "inside look for '%s' from pos %d in '%s'" patt n s; *)
    let pattlen = String.length patt in
    if n + pattlen > String.length s then None
    else begin
@@ -18,7 +18,9 @@ module SimpleStream : Comb.STREAM = struct
          else false
        in
        if checker pattlen 0 n
-       then ((* log "look success"; *) Some (n+pattlen, s))
+       then
+         (* let () = log "look success" in *)
+         Some (n+pattlen, s)
        else ((* log "look failed"; *) None)
      end
 

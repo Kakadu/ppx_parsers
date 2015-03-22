@@ -75,7 +75,10 @@ let magic_wrap ~input should_success (module New: TEST_PARSER) (module Orig: TES
                assert_bool "<no message>" (match old_ with Orig.Parsed _ -> true | _ -> false);
                match new_,old_ with
                | (New.Parsed (r1,_,_), Orig.Parsed (r2,_,_)) ->
-                  assert_equal ~msg:"Success results should be equal" r1 r2
+                 (* print_endline ""; *)
+                 (* print_endline r1; *)
+                 (* print_endline r2; *)
+                 assert_equal ~msg:"Success results should be equal" r1 r2
                | _ -> ()
              end else begin
                assert_bool "<no message>" (match new_ with New.Parsed _ -> false | _ -> true);
@@ -86,7 +89,8 @@ let magic_wrap ~input should_success (module New: TEST_PARSER) (module Orig: TES
 
 let suite =
   "allfuns" >:::
-  [ "0">:: (fun _ctx ->
+  [ "dummy" >:: (fun _ -> ())
+  ; "0">:: (fun _ctx ->
              let module L = TestLexer.SimpleStream in
              let l = L.create "" in assert_bool "Lexer.is_finished" (L.is_finished l) )
   ; "1">:: (fun _ctx ->  magic_wrap ~input:"true"  true  (module A.ASDF1) (module A.ASDF1_orig) )
@@ -95,11 +99,16 @@ let suite =
   ; "3">:: (fun _ctx ->  magic_wrap ~input:"true"  true  (module B.ASDF1) (module B.ASDF1_orig) )
   ; "4">:: (fun _ctx ->  magic_wrap ~input:"tru1e" false (module B.ASDF1) (module B.ASDF1_orig) )
 
-  ; "5">:: (fun _ctx ->  magic_wrap ~input:"true"  true (module C.ASDF1) (module C.ASDF1_orig) )
-  (* ; "6">:: (fun _ctx ->  magic_wrap ~input:"false" true (module C.ASDF1) (module C.ASDF1_orig) ) *)
+  ; "alternative1">:: (fun _ctx ->  magic_wrap ~input:"true"  true (module C.ASDF1) (module C.ASDF1_orig) )
+  ; "alternative2">:: (fun _ctx ->  magic_wrap ~input:"false" true (module C.ASDF1) (module C.ASDF1_orig) )
 
-  (* ; "7">:: (fun _ctx ->  magic_wrap ~input:"true true true" true (module D.ASDF1) (module D.ASDF1_orig) ) *)
-  ; "8">:: (fun _ctx ->  magic_wrap ~input:" false true"  true (module G.ASDF1) (module G.ASDF1_orig) )
+  ; "SimpleMany">:: (fun _ ->  magic_wrap true (module D.ASDF1) (module D.ASDF1_orig) ~input:"true true true" )
+  ; "WS">::         (fun _ ->  magic_wrap true (module G.ASDF1) (module G.ASDF1_orig) ~input:" false true" )
+  ; "jsonLike1">:: (fun _ -> magic_wrap true  (module H.ASDF1) (module H.ASDF1_orig) ~input:"{true}"  )
+  ; "jsonLike2">:: (fun _ -> magic_wrap true  (module H.ASDF1) (module H.ASDF1_orig) ~input:"{false}")
+  ; "jsonLike3">:: (fun _ -> magic_wrap true  (module H.ASDF1) (module H.ASDF1_orig) ~input:"{true,false}")
+  ; "jsonLike4">:: (fun _ -> magic_wrap true  (module H.ASDF1) (module H.ASDF1_orig) ~input:"{false,true}")
+
   ]
 
 let () = run_test_tt_main suite
