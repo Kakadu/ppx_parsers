@@ -1,9 +1,9 @@
 open Printf
-open D
+open G
 
 let () =
-  let s = "true true" in
-  printf "input: %s\n%!" s;
+  let s = " false true" in
+  printf "input: '%s'\n%!" s;
   let stream = ASDF1.Lexer.create s in
   let open ASDF1 in
   match main stream with

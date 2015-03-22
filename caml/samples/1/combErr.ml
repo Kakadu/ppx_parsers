@@ -134,6 +134,7 @@ struct
 
   let whitespace : string parser = (look " ") <|> (look "\n") <|> (look "\t")
   let whitespaces = many_fold (fun () _ -> ()) () whitespace
+  let wss = whitespaces
 
   let expr = assert false
 end

@@ -51,8 +51,8 @@ let rec parse_past root =
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "<~@"; _ }; _}, [(_,l); (_,r)]) -> Left  (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "repsep"; _ }; _}, [(_,l); (_,r)]) -> RepSep (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "many"; _ }; _}, [(_,l)]) -> Many (helper l)
-    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "ws"; _ }; _}, []) -> Whitespace
-    | _ -> OExpr root
+    | Pexp_ident { txt=Lident  "wss"; _ }                                      -> Whitespace
+    | _ -> log "OExpr is read"; OExpr root
   in helper root
 
 let rec has_attr name = List.fold_left (fun acc -> function ({txt; _},_) when txt=name -> true | _ -> acc)  false
@@ -119,6 +119,9 @@ let map_past (past: past) : Parsetree.expression =
               | None ->  error := Printf.sprintf "can't parse '%s'" [%e Exp.constant@@Const_string (str,None)]
        ]
 
+    | Whitespace ->
+      [%expr [%e evar ans_name] := (); [%e evar ans_stream] := Lexer.skip_ws ! [%e evar ans_stream] ]
+
     | Alt (l,r) ->
        let (_,temp_stream) = make_vars () in
        [%expr let [%p pvar temp_stream ] = [%e evar ans_stream] in
@@ -179,7 +182,6 @@ let map_past (past: past) : Parsetree.expression =
               in
               loop ()
        ]
-    | Whitespace -> [%expr failwith "not implemented" ]
     | OExpr e -> e
   in
 

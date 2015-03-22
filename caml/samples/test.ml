@@ -96,9 +96,10 @@ let suite =
   ; "4">:: (fun _ctx ->  magic_wrap ~input:"tru1e" false (module B.ASDF1) (module B.ASDF1_orig) )
 
   ; "5">:: (fun _ctx ->  magic_wrap ~input:"true"  true (module C.ASDF1) (module C.ASDF1_orig) )
-  ; "6">:: (fun _ctx ->  magic_wrap ~input:"false" true (module C.ASDF1) (module C.ASDF1_orig) )
+  (* ; "6">:: (fun _ctx ->  magic_wrap ~input:"false" true (module C.ASDF1) (module C.ASDF1_orig) ) *)
 
-  ; "7">:: (fun _ctx ->  magic_wrap ~input:"true true true" true (module D.ASDF1) (module D.ASDF1_orig) )
+  (* ; "7">:: (fun _ctx ->  magic_wrap ~input:"true true true" true (module D.ASDF1) (module D.ASDF1_orig) ) *)
+  ; "8">:: (fun _ctx ->  magic_wrap ~input:" false true"  true (module G.ASDF1) (module G.ASDF1_orig) )
   ]
 
 let () = run_test_tt_main suite
