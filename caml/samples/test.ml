@@ -103,6 +103,9 @@ let suite =
   ; "alternative2">:: (fun _ctx ->  magic_wrap ~input:"false" true (module C.ASDF1) (module C.ASDF1_orig) )
 
   ; "SimpleMany">:: (fun _ ->  magic_wrap true (module D.ASDF1) (module D.ASDF1_orig) ~input:"true true true" )
+
+  ; "Oexpr simple">:: (fun _ ->  magic_wrap true (module F.ASDF1) (module F.ASDF1_orig) ~input:"{x}" )
+
   ; "WS">::         (fun _ ->  magic_wrap true (module G.ASDF1) (module G.ASDF1_orig) ~input:" false true" )
   ; "jsonLike1">:: (fun _ -> magic_wrap true  (module H.ASDF1) (module H.ASDF1_orig) ~input:"{true}"  )
   ; "jsonLike2">:: (fun _ -> magic_wrap true  (module H.ASDF1) (module H.ASDF1_orig) ~input:"{false}")

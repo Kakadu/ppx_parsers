@@ -109,6 +109,13 @@ let map_past (past: past) : Parsetree.expression =
     )
   in
   let rec helper ans_name ans_stream = function
+    | OExpr oexpr ->
+      [%expr match [%e oexpr]  ![%e evar ans_stream] with
+             | Parsed (rez,_errs,new_stream) -> [%e evar ans_stream] := new_stream;
+                                                error := "";
+                                                [%e evar ans_name] := rez
+             | Failed _ -> error:= Printf.sprintf "Failed when applying OExpr"
+      ]
     | Look str   ->
       (* log "look for '%s'" str; *)
        (* We generate some code which skip names*)
@@ -223,7 +230,6 @@ let map_past (past: past) : Parsetree.expression =
               in
               loop ()
        ]
-    | OExpr e -> e
   in
 
   [%expr fun _stream ->
@@ -263,11 +269,40 @@ let struct_item_mapper args : Ast_mapper.mapper =
     let newbody = map_past (parse_past vb.pvb_expr) in
     { {vb with pvb_expr = newbody } with pvb_attributes=remove_parser_attr vb.pvb_attributes }
   in
+
+  let canonize_vb vb =
+    (* sometimes we should write awkward code to make it compilable
+     *   let rec main stream = ((look "{") @~> (theval) <~@ (look "}")) @@ stream
+     *   and theval stream = (look "x") stream
+     *
+     * instead of:
+     *   let rec main stream = ((look "{") @~> (theval) <~@ (look "}")) @@ stream
+     *   and theval = (look "x")
+     *)
+    match vb with
+    (* TODO: implement case for applying using @@ *)
+    | { pvb_pat ={ppat_desc=Ppat_var {txt=funname;_}; _}
+      ; pvb_expr={pexp_desc=Pexp_fun (_,None, {ppat_desc=Ppat_var {txt=stream_var_name; _}; _},
+                                      {pexp_desc=Pexp_apply(parser_expr,
+                                                            [("",{pexp_desc=Pexp_ident{txt=Lident arg_name;_};_})])
+                                      ; _
+                                      }
+                                     )
+                   ; _
+                  }
+      ; _
+      } when stream_var_name=arg_name ->
+      (* log "%s, %s, YESSS" funname arg_name; *)
+      { vb with pvb_expr = parser_expr }
+    | _ -> vb
+  in
+
+
   { default_mapper with
     structure_item = fun mapper sitem ->
       match sitem.pstr_desc with
       | Pstr_value (_rec,xs) ->
-         let f vb = if is_good_value_binding vb then map_value_binding mapper vb else vb in
+         let f vb = if is_good_value_binding vb then map_value_binding mapper @@ canonize_vb vb else vb in
          { sitem with pstr_desc =  Pstr_value (_rec, List.map f xs) }
       | x -> default_mapper.structure_item mapper sitem
   }

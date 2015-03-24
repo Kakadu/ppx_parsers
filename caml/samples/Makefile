@@ -1,7 +1,7 @@
 OCAMLC=ocamlfind c -g -I 1
 OUT=demo
 OUT_TEST=test
-TEST_NAMES=a b c d e g h
+TEST_NAMES=a b c d e f g h
 TEST_CMOS=$(addsuffix .cmo,$(TEST_NAMES) )
 
 .PHONY: all clean

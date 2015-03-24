@@ -1,8 +1,8 @@
 open Printf
-open H
+open E
 
 let () =
-  let s = "{false,true,false}" in
+  let s = "{[{},{}],[],[{[]}]}" in
   printf "input: '%s'\n%!" s;
   let stream = ASDF1.Lexer.create s in
   let open ASDF1 in
