@@ -112,6 +112,8 @@ let suite =
   ; "jsonLike3">:: (fun _ -> magic_wrap true  (module H.ASDF1) (module H.ASDF1_orig) ~input:"{true,false}")
   ; "jsonLike4">:: (fun _ -> magic_wrap true  (module H.ASDF1) (module H.ASDF1_orig) ~input:"{false,true}")
 
+  ; "EBNF+">:: (fun _ -> magic_wrap true  (module I.ASDF1) (module I.ASDF1_orig) ~input:"true false false")
+  ; "EBNF+">:: (fun _ -> magic_wrap false (module I.ASDF1) (module I.ASDF1_orig) ~input:"false")
   ]
 
 let () = run_test_tt_main suite

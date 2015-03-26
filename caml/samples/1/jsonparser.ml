@@ -56,9 +56,10 @@ module Json1 = struct
                    ; ((look "null") <|> (look "true") <|> (look "false")) --> const ()
       ])) stream
 
-    and obj s: unit r = ((look "{" @~> (list0 (whitespaces @~> member) (look ",") ) <~@ (whitespaces @~> look "}")) --> const ()) s
+    and obj s: unit r = ((look "{" @~> (list0By (wss@~>member) (look ",")) <~@ (wss @~> look "}"))
+                         --> const ()) s
     and arr s: _ list r =
-      (whitespaces @~> look "[" @~> (list0 (whitespaces @~> value) (whitespaces @~> look ",") ) <~@ (whitespaces @~> look "]") ) s
+      (wss @~> look "[" @~> (list0By (wss @~> value) (wss @~> look ",") ) <~@ (wss @~> look "]")) s
     and member s: unit r = ((string_lit @~> (whitespaces @~> look ":") @~> value) ) s
 
 

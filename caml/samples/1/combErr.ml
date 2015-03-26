@@ -104,7 +104,10 @@ struct
   let many p =
     (many_fold (fun acc x -> fun l -> acc (x::l)) (fun x -> x) p) --> (fun t -> t [])
 
-  let list0 p delim =
+  let many1 p =
+    p >>= fun h -> many p -->(fun tl -> h::tl)
+
+  let list0By p delim =
     (p  >>= fun h ->
              many (delim >>= const p) --> fun tl -> (h::tl)
     )

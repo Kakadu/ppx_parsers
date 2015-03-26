@@ -29,8 +29,10 @@ type past =
   | OExpr of Parsetree.expression
   | Look of string
   | Alt of past * past
-  | Many of past
-  | RepSep of past*past (* parse and separator *)
+  | Many  of past   (* EBNF * *)
+  | Many1 of past   (* EBNF + *)
+  | RepSep  of past*past (* item and separator parsers *)
+  | RepSep1 of past*past (* at least 1 item should be parsed *)
   | Whitespace
   | Left  of past*past
   | Right of past*past
@@ -49,10 +51,13 @@ let rec parse_past root =
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "-->"; _ }; _}, [(_,l); (_,r)]) -> Map   (helper l, r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "@~>"; _ }; _}, [(_,l); (_,r)]) -> Right (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "<~@"; _ }; _}, [(_,l); (_,r)]) -> Left  (helper l, helper r)
-    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "listBy"; _ }; _}, [(_,l); (_,r)]) -> RepSep (helper l, helper r)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident  "listBy"; _ }; _}, [(_,l); (_,r)]) -> RepSep (helper l, helper r)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "list1By"; _ }; _}, [(_,l); (_,r)]) -> RepSep1 (helper l, helper r)
     (* | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "repsep"; _ }; _}, [(_,l); (_,r)]) -> RepSep (helper l, helper r) *)
-    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "many"; _ }; _}, [(_,l)]) -> Many (helper l)
-    | Pexp_ident { txt=Lident  "wss"; _ }                                      -> Whitespace
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident  "many"; _ }; _}, [(_,l)]) -> Many (helper l)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "many1"; _ }; _}, [(_,l)]) -> Many1 (helper l)
+    | Pexp_ident { txt=Lident  "whitespaces"; _ }
+    | Pexp_ident { txt=Lident          "wss"; _ }                                      -> Whitespace
     | _ -> log "OExpr is read"; OExpr root
   in helper root
 
@@ -200,7 +205,8 @@ let map_past (past: past) : Parsetree.expression =
                [%e evar ans_name] := List.rev ! [%e evar item_list]
              end
       ]
-        (* assert false *)
+    | RepSep1(p_ast,sep_ast) ->
+        assert false
     | Map (l_ast,r_expr) ->
        (* log "map result is found!"; *)
        let temp_ans_name,temp_stream_name = make_vars () in
@@ -229,6 +235,31 @@ let map_past (past: past) : Parsetree.expression =
                            )
               in
               loop ()
+       ]
+    | Many1 past ->
+       let item_name,temp_stream_name = make_vars () in
+       let item_list_name = make_var () in
+       [%expr let [%p pvar item_name] = ref (Obj.magic()) in
+              let [%p pvar temp_stream_name] = [%e evar ans_stream] in
+              let [%p pvar item_list_name] = ref [] in
+              let () = [%e helper item_name temp_stream_name past] in
+              if !error="" then begin
+                [%e evar item_list_name] = [ [%e evar item_name] ];
+                let rec loop () =
+                  let save_stream = [%e evar temp_stream_name] in
+                  let () = [%e helper item_name "save_stream" past] in
+                  if !error="" then begin
+                    [%e evar item_list_name]:= [%e evar item_name] :: ![%e evar item_list_name];
+                    [%e evar temp_stream_name]   := !save_stream;
+                    loop ()
+                  end else begin
+                    error := "";
+                    [%e evar ans_stream] := ![%e evar temp_stream_name];
+                    [%e evar ans_name] := ! [%e evar item_list_name]
+                  end
+                in
+                loop ()
+              end
        ]
   in
 

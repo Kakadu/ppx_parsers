@@ -35,8 +35,9 @@ module type PARSERS = sig
     val (<~@): 'a parser -> 'b parser -> 'a parser
     val many_fold: ('init -> 'a -> 'init) -> 'init -> 'a parser -> 'init parser
     val many: 'a parser -> 'a list parser
+    val many1: 'a parser -> 'a list parser
     val number: int parser
-    val list0:  'a parser -> 'b parser -> 'a list parser
+    val list0By:  'a parser -> 'b parser -> 'a list parser
     val listBy: 'a parser -> 'b parser -> 'a list parser
     val whitespaces: unit parser
     val wss: unit parser
@@ -112,7 +113,10 @@ struct
   let many p =
     (many_fold (fun acc x -> fun l -> acc (x::l)) (fun x -> x) p) --> (fun t -> t [])
 
-  let list0 p delim =
+  let many1 p =
+    p >>= fun h -> many p -->(fun tl -> h::tl)
+
+  let list0By p delim =
     (p  >>= fun h ->
         many (delim >>= const p) --> fun tl ->  (h::tl)
     )
