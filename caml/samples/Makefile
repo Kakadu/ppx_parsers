@@ -1,7 +1,7 @@
 OCAMLC=ocamlfind c -g -I 1
 OUT=demo
 OUT_TEST=test
-TEST_NAMES=a b c d e f g h i
+TEST_NAMES=a b c d  f g h i tstMutalRecursion
 TEST_CMOS=$(addsuffix .cmo,$(TEST_NAMES) )
 
 .PHONY: all clean

@@ -76,6 +76,8 @@ let suite =
   ; "jsonLike3">:: (fun _ -> magic_wrap true  (module H.ASDF1) (module H.ASDF1_orig) ~input:"{true,false}")
   ; "jsonLike4">:: (fun _ -> magic_wrap true  (module H.ASDF1) (module H.ASDF1_orig) ~input:"{false,true}")
 
+  ; "MutalRecursion1">::(fun _ -> magic_wrap true (module TstMutalRecursion.ASDF1) (module TstMutalRecursion.ASDF1_orig)
+                            ~input:"{[{};{}];[];[{[]}]}")
 
   ; "EBNF*">:: (fun _ ->  magic_wrap true (module D.ASDF1) (module D.ASDF1_orig) ~input:"true true true" )
   ; "EBNF*">:: (fun _ ->  magic_wrap true (module D.ASDF1) (module D.ASDF1_orig) ~input:"" )
