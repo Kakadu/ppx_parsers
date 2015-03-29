@@ -21,7 +21,9 @@ module SimpleStream : Comb.STREAM = struct
        then
          (* let () = log "look success" in *)
          Some (n+pattlen, s)
-       else ((* log "look failed"; *) None)
+       else
+         (* let () = log "look failed" in *)
+         None
      end
 
  let rec skip_ws ((n,s) as stream) =

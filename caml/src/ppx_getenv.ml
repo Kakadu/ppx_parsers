@@ -174,7 +174,7 @@ let map_past (past: past) : Parsetree.expression =
                                    [%e evar ans_name  ] := ![%e evar l_ans]))
              end
       ]
-    | RepSep(p_ast,sep_ast) ->
+    | RepSep1(p_ast,sep_ast) ->
       let (sep_ans,temp_stream) = make_vars () in
       let item_ans = make_var () in
       let item_list = make_var () ^ "xs" in
@@ -205,8 +205,40 @@ let map_past (past: past) : Parsetree.expression =
                [%e evar ans_name] := List.rev ! [%e evar item_list]
              end
       ]
-    | RepSep1(p_ast,sep_ast) ->
-        assert false
+    | RepSep(p_ast,sep_ast) ->
+      let (sep_ans,temp_stream) = make_vars () in
+      let item_ans = make_var () in
+      let item_list = make_var () ^ "xs" in
+      [%expr let [%p pvar temp_stream] = [%e evar ans_stream] in
+             let [%p pvar sep_ans]   = ref (Obj.magic()) in
+             let [%p pvar item_ans]  = ref (Obj.magic()) in
+             let [%p pvar item_list] = ref (Obj.magic()) in
+             let () = [%e helper item_ans temp_stream p_ast] in
+             if !error="" then begin
+               [%e evar item_list] := [ ! [%e evar item_ans] ];
+               let rec loop () =
+                 let save_stream: _ ref = [%e evar temp_stream] in
+                 let () = [%e helper sep_ans "save_stream" sep_ast] in
+                 if !error="" then (
+                   let () = [%e helper item_ans "save_stream" p_ast] in
+                   if !error="" then ( [%e evar item_list] := ![%e evar item_ans] :: ![%e evar item_list];
+                                       [%e evar temp_stream] := ![%e evar "save_stream"];
+                                       loop ())
+                   else ( (* can't parse `item` after parsing `sep` *)
+                     [%e evar temp_stream] := ! save_stream
+                   )
+                 ) else ( (* can' parse separator *)
+                   [%e evar temp_stream] := ! save_stream (* seems to be copy past of previous else branch *)
+                 )
+               in
+               loop ();
+               error := "";
+               [%e evar ans_name] := List.rev ! [%e evar item_list]
+             end else begin
+               error:= "";
+               [%e evar ans_name] := [];
+             end
+      ]
     | Map (l_ast,r_expr) ->
        (* log "map result is found!"; *)
        let temp_ans_name,temp_stream_name = make_vars () in
