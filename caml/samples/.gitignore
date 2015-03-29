@@ -3,4 +3,7 @@
 /test
 /d
 /xxx
+*.cmxa
+*.a
+*.cmo
 

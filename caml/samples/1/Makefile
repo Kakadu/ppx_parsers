@@ -6,9 +6,22 @@ OUT_JSON=json1.native
 OUT_JSON_BYTE=json1.byte
 OUTS=$(OUT_EXPR) $(OUT_JSON) $(OUT_EXPR_BYTE) $(OUT_JSON_BYTE)
 
+.PHONY: lib all
 .SUFFIXES: .cmx .cmo .cmi .ml
 
+lib: comb.cma comb.cmxa
+
+comb.cma: comb.cmo combErr.cmo
+	$(OCAMLC) -a $< -o $@
+
+comb.cmxa: comb.cmx combErr.cmx
+	$(OCAMLOPT) -a $< -o $@
+
+
 all: $(OUTS)
+
+
+
 
 $(OUT_EXPR): comb.cmx main.cmx
 	$(OCAMLOPT) $^ -o $@
@@ -36,4 +49,5 @@ jsonparser.cmo: combErr.cmo
 	$(OCAMLC) -c $<
 
 clean:
-	$(RM) $(OUTS) *.cmx *.cmo *.cmi
+	$(RM) $(OUTS) *.cm[iox] *.o *.a *.cma *.cmxa
+

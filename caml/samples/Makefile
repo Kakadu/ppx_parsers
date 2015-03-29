@@ -1,12 +1,18 @@
 OCAMLC=ocamlfind c -g -I 1
-OUT=demo
-OUT_TEST=test
-TEST_NAMES=a b c d  f g h i tstMutalRecursion
+OUT=demo.byte
+OUT_TEST=test.byte
+OUT_BENCH=bench.native
+TEST_NAMES=a b c d f g h i tstMutalRecursion
 TEST_CMOS=$(addsuffix .cmo,$(TEST_NAMES) )
 
-.PHONY: all clean
+.SUFFIXES: .byte .native
+.PHONY: all test demo bench clean
 
-all: $(OUT)
+all: demo test bench
+demo: $(OUT)
+test: $(OUT_TEST)
+bench: $(OUT_BENCH)
+
 
 define TEST_RULES
 test.cmo: $(1).cmo
@@ -16,9 +22,10 @@ endef
 
 $(foreach i,$(TEST_NAMES),$(eval $(call TEST_RULES,$(i)) ) )
 
-$(OUT): testLexer.cmo comb.cmo $(TEST_CMOS) demo.cmo
+$(OUT): testLexer.cmo 1/comb.cma $(TEST_CMOS) demo.cmo
 	$(OCAMLC) -linkpkg $^ -o $@
 
+test: $(OUT_TEST)
 test: OCAMLC += -package oUnit
 
 testLexer.cmo: testLexer.ml
@@ -28,15 +35,16 @@ demo.cmo: $(TEST_CMOS)
 demo.cmo: demo.ml
 	$(OCAMLC) -c $<
 
-test.cmo: OCAMLC += -package oUnit
 test.cmo: test.ml
-	$(OCAMLC) -package oUnit -c $<
+	$(OCAMLC) -c $<
 
-$(OUT_TEST): testLexer.cmo comb.cmo $(addsuffix .cmo,$(TEST_NAMES)) test.cmo
+$(OUT_TEST): testLexer.cmo 1/comb.cma $(addsuffix .cmo,$(TEST_NAMES)) test.cmo
 	$(OCAMLC) $^ -linkpkg -o $@
 
-comb.cmo:
+comb.cma:
 #../_build/src/ppx_getenv.native:
+
+$(OUT_BENCH):
 
 clean:
 	$(RM) *.cm[iox] *.o $(OUT)

@@ -28,6 +28,7 @@ let log fmt = kprintf (printf "(* >>> %s *)\n%!") fmt
 type past =
   | OExpr of Parsetree.expression
   | Look of string
+  | Decimal
   | Alt of past * past
   | Many  of past   (* EBNF * *)
   | Many1 of past   (* EBNF + *)
@@ -53,9 +54,9 @@ let rec parse_past root =
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "<~@"; _ }; _}, [(_,l); (_,r)]) -> Left  (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident  "listBy"; _ }; _}, [(_,l); (_,r)]) -> RepSep (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "list1By"; _ }; _}, [(_,l); (_,r)]) -> RepSep1 (helper l, helper r)
-    (* | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "repsep"; _ }; _}, [(_,l); (_,r)]) -> RepSep (helper l, helper r) *)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident  "many"; _ }; _}, [(_,l)]) -> Many (helper l)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "many1"; _ }; _}, [(_,l)]) -> Many1 (helper l)
+    | Pexp_ident { txt=Lident      "decimal"; _ }                               -> Decimal
     | Pexp_ident { txt=Lident  "whitespaces"; _ }
     | Pexp_ident { txt=Lident          "wss"; _ }                                      -> Whitespace
     | _ -> log "OExpr is read"; OExpr root
@@ -121,9 +122,15 @@ let map_past (past: past) : Parsetree.expression =
                                                 [%e evar ans_name] := rez
              | Failed _ -> error:= Printf.sprintf "Failed when applying OExpr"
       ]
+    | Decimal ->
+      [%expr match Lexer.decimal ![%e evar ans_stream] with
+             | Some (d,new_stream) -> [%e evar ans_name] := d;
+                                      [%e evar ans_stream] := new_stream
+             | None ->  error := Printf.sprintf "Failed when parsing decimal number"
+       ]
     | Look str   ->
-      (* log "look for '%s'" str; *)
        (* We generate some code which skip names*)
+       (* TODO: remove this skipping of whitespace, we will write that explicilty *)
        let temp_stream = make_var () in
        [%expr let [%p pvar temp_stream] = Lexer.skip_ws ! [%e evar ans_stream] in
               match Lexer.look [%e evar temp_stream] [%e Ast_convenience.str str] with
@@ -272,16 +279,16 @@ let map_past (past: past) : Parsetree.expression =
        let item_name,temp_stream_name = make_vars () in
        let item_list_name = make_var () in
        [%expr let [%p pvar item_name] = ref (Obj.magic()) in
-              let [%p pvar temp_stream_name] = [%e evar ans_stream] in
+              let [%p pvar temp_stream_name]: _ ref = [%e evar ans_stream] in
               let [%p pvar item_list_name] = ref [] in
               let () = [%e helper item_name temp_stream_name past] in
               if !error="" then begin
-                [%e evar item_list_name] = [ [%e evar item_name] ];
+                [%e evar item_list_name] := ! [%e evar item_name] :: [];
                 let rec loop () =
                   let save_stream = [%e evar temp_stream_name] in
                   let () = [%e helper item_name "save_stream" past] in
                   if !error="" then begin
-                    [%e evar item_list_name]:= [%e evar item_name] :: ![%e evar item_list_name];
+                    [%e evar item_list_name] := ! [%e evar item_name] :: ![%e evar item_list_name];
                     [%e evar temp_stream_name]   := !save_stream;
                     loop ()
                   end else begin
