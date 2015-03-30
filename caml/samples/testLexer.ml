@@ -1,9 +1,22 @@
 open Printf
 let log fmt = kprintf (printf "=== %s\n%!") fmt
 
+module type STRING_STREAM = sig
+  type aux_info
+  type u = aux_info * string
+  type t = u
+  include Comb.STREAM with type t := u
+  (* We can't write include Comb.STREAM with type t := aux_info * string *)
+  (* Drup> there is an ticket on mantis where jacque garigues explains why it would be unsound to put anything else. *)
+  (* TODO: find this mantis issue*)
+  val extract_string: u -> string
+end
 
-module SimpleStream : Comb.STREAM = struct
- type t = int*string
+module SimpleStream : STRING_STREAM = struct
+ type aux_info = int
+ type u = aux_info * string
+ type t = u
+ let extract_string = snd
  let create s : t = (0,s)
  let is_finished (n,s) = n >= String.length s
  let position = fst
