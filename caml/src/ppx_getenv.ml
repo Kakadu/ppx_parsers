@@ -123,10 +123,23 @@ let map_past (past: past) : Parsetree.expression =
              | Failed _ -> error:= Printf.sprintf "Failed when applying OExpr"
       ]
     | Decimal ->
-      [%expr match Lexer.decimal ![%e evar ans_stream] with
-             | Some (d,new_stream) -> [%e evar ans_name] := d;
-                                      [%e evar ans_stream] := new_stream
-             | None ->  error := Printf.sprintf "Failed when parsing decimal number"
+      [%expr let (start_pos, str) as init_lexer = ! [%e evar ans_stream] in
+             if Lexer.is_finished init_lexer then error:="stream is ended"
+             else begin
+               let str_len = String.length str in
+               let (cur_pos,sign) = if str.[start_pos] = '-' then (ref (start_pos+1),-1) else (ref start_pos,1) in
+               let do_skip () =
+                 while !cur_pos < str_len && (let c = int_of_char str.[!cur_pos] in (48<=c)&&(c<=57)) do
+                   incr cur_pos done
+               in
+               do_skip ();
+               if !cur_pos<str_len && str.[!cur_pos]='.' then (incr cur_pos; do_skip () );
+               if !cur_pos<str_len && (str.[!cur_pos]='e' || str.[!cur_pos]='E')  then (incr cur_pos; do_skip () );
+               let float_str = String.sub str start_pos (!cur_pos - start_pos) in
+               print_endline float_str;
+               try [%e evar ans_name] := float_of_string float_str
+               with Failure _ -> error:= "Failure float_of_string"
+             end
        ]
     | Look str   ->
        (* We generate some code which skip names*)
