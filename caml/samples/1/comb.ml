@@ -58,6 +58,7 @@ end
 module type PARSERS_EXT = sig
   include PARSERS
   val float_number: float parser
+  val string_lit: string parser
 end
 
 
@@ -272,5 +273,19 @@ module MakeExt(S: STRING_STREAM): PARSERS_EXT with type stream = S.t and type er
       with Failure _ -> Failed ()
     end
 
-
+  let string_lit ((start_pos, str) as init_lexer) =
+    if S.is_finished init_lexer then Failed ()
+    else if str.[start_pos] <> '"' then Failed ()
+    else
+      let str_len = String.length str in
+      let rec loop is_esc pos =
+        if pos >= str_len then Failed () else
+        match str.[pos] with
+        | '"' when is_esc -> loop false (pos+1)
+        | '"' -> Parsed (String.sub str (start_pos+1) (pos-start_pos-1), (), (pos+1,str) )
+        | '\\' when is_esc -> loop false (pos+1)
+        | '\\' -> loop true (pos+1)
+        | _ -> loop false (pos+1)
+      in
+      loop false (start_pos+1)
 end

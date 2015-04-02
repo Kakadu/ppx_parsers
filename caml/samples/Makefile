@@ -2,7 +2,7 @@ OCAMLC=ocamlfind c -g -I 1
 OUT=demo.byte
 OUT_TEST=test.byte
 OUT_BENCH=bench.native
-TEST_NAMES=a b c d f g h i tstMutalRecursion tstFloat
+TEST_NAMES=a b c d f g h i tstMutalRecursion tstFloat tstStringLit
 TEST_CMOS=$(addsuffix .cmo,$(TEST_NAMES) )
 
 .SUFFIXES: .byte .native
@@ -15,7 +15,7 @@ bench: $(OUT_BENCH)
 
 
 define TEST_RULES
-test.cmo: $(1).cmo
+test.cmo: $(1).cmo 1/comb.cma
 $(1).cmo: $(1).ml testLexer.cmo
 	$(OCAMLC) -ppx ../_build/src/ppx_getenv.native -c $(1).ml
 endef

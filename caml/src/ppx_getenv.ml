@@ -29,6 +29,7 @@ type past =
   | OExpr of Parsetree.expression
   | Look of string
   | Decimal
+  | StringLit
   | Alt of past * past
   | Many  of past   (* EBNF * *)
   | Many1 of past   (* EBNF + *)
@@ -57,6 +58,7 @@ let rec parse_past root =
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident  "many"; _ }; _}, [(_,l)]) -> Many (helper l)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "many1"; _ }; _}, [(_,l)]) -> Many1 (helper l)
     | Pexp_ident { txt=Lident      "decimal"; _ }                               -> Decimal
+    | Pexp_ident { txt=Lident   "string_lit"; _ }                               -> StringLit
     | Pexp_ident { txt=Lident  "whitespaces"; _ }
     | Pexp_ident { txt=Lident          "wss"; _ }                                      -> Whitespace
     | _ -> log "OExpr is read"; OExpr root
@@ -142,6 +144,25 @@ let map_past (past: past) : Parsetree.expression =
                with Failure _ -> error:= "Failure float_of_string"
              end
        ]
+    | StringLit ->
+      [%expr let (start_pos, str) as init_lexer = ! [%e evar ans_stream] in
+             if Lexer.is_finished init_lexer then error := "Stream is finished"
+             else if str.[start_pos] <> '"' then error := "<error>"
+             else
+               let str_len = String.length str in
+               let rec loop is_esc pos =
+                 if pos >= str_len then error := "<error>" else
+                   match str.[pos] with
+                   | '"' when is_esc -> loop false (pos+1)
+                   | '"' -> [%e evar ans_name] := String.sub str (start_pos+1) (pos-start_pos-1);
+                            [%e evar ans_stream] := (pos+1,str)
+                   | '\\' when is_esc -> loop false (pos+1)
+                   | '\\' -> loop true (pos+1)
+                   | _ -> loop false (pos+1)
+               in
+               loop false (start_pos+1)
+
+      ]
     | Look str   ->
        (* We generate some code which skip names*)
        (* TODO: remove this skipping of whitespace, we will write that explicilty *)

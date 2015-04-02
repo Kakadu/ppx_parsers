@@ -81,6 +81,9 @@ let suite =
 
   ; "Float1">:: (fun _ ->  magic_wrap true (module TstFloat.ASDF1) (module TstFloat.ASDF1_orig) ~input:"1.23 3.33")
   ; "Float2">:: (fun _ ->  magic_wrap true (module TstFloat.ASDF1) (module TstFloat.ASDF1_orig) ~input:"1.23 -0.12")
+
+  ; "StringLit" >:: (fun _ -> magic_wrap true (module TstStringLit.ASDF1) (module TstStringLit.ASDF1_orig)
+                        ~input:"\"\" \"asdf\" \"123\"" )
   ]
 
 let () = run_test_tt_main suite
