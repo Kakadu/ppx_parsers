@@ -1,4 +1,5 @@
 OCAMLC=ocamlfind c -g -I 1
+OCAMLOPT=ocamlfind opt -g -I 1
 OUT=demo.byte
 OUT_TEST=test.byte
 OUT_BENCH=bench.native
@@ -31,6 +32,9 @@ test: OCAMLC += -package oUnit
 testLexer.cmo: testLexer.ml
 	$(OCAMLC) -c $<
 
+testLexer.cmx: testLexer.ml
+	$(OCAMLOPT) -c $<
+
 demo.cmo: $(TEST_CMOS)
 demo.cmo: demo.ml
 	$(OCAMLC) -c $<
@@ -44,7 +48,15 @@ $(OUT_TEST): testLexer.cmo 1/comb.cma $(addsuffix .cmo,$(TEST_NAMES)) test.cmo
 comb.cma:
 #../_build/src/ppx_getenv.native:
 
-$(OUT_BENCH):
+$(OUT_BENCH): OCAMLOPT += -package extlib
+$(OUT_BENCH): testLexer.cmx  1/comb.cmxa tstJSON.cmx bench.cmx
+	$(OCAMLOPT) $^ -linkpkg -o $@
+
+bench.cmx: bench.ml tstJSON.cmx
+	$(OCAMLOPT) -c $<
+
+tstJSON.cmx: tstJSON.ml 1/comb.cmxa testLexer.ml
+	$(OCAMLOPT) -c $<
 
 clean:
 	$(RM) *.cm[iox] *.o $(OUT)
