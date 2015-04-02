@@ -27,30 +27,23 @@ module WrapTest1(Arg: THE_TEST_1) = struct
 end
 *)
 let magic_wrap ~input should_success (module New: TEST_PARSER) (module Orig: TEST_PARSER) =
-  let new_ =
-    let stream = New.Lexer.create input in
-    New.main stream
-  in
-  let old_ =
-    let stream = Orig.Lexer.create input in
-    Orig.main stream
-  in
-  let () = if should_success then begin
-               assert_bool "<no message>" (match new_ with New.Parsed _ -> true | _ -> false);
-               assert_bool "<no message>" (match old_ with Orig.Parsed _ -> true | _ -> false);
-               match new_,old_ with
-               | (New.Parsed (r1,_,_), Orig.Parsed (r2,_,_)) ->
-                 (* print_endline ""; *)
-                 (* print_endline r1; *)
-                 (* print_endline r2; *)
-                 assert_equal ~msg:"Success results should be equal" r1 r2
-               | _ -> ()
-             end else begin
-               assert_bool "<no message>" (match new_ with New.Parsed _ -> false | _ -> true);
-               assert_bool "<no message>" (match old_ with Orig.Parsed _ -> false | _ -> true);
-             end
-  in
-  ()
+  let new_ = New.main @@ New.Lexer.create input in
+  let old_ = Orig.main @@ Orig.Lexer.create input in
+
+  if should_success then
+    let () = assert_bool "<no message>" (match new_ with New.Parsed _ -> true | _ -> false) in
+    let () = assert_bool "<no message>" (match old_ with Orig.Parsed _ -> true | _ -> false) in
+    match new_,old_ with
+    | (New.Parsed (r1,_,_), Orig.Parsed (r2,_,_)) ->
+      (* print_endline ""; *)
+      (* print_endline r1; *)
+      (* print_endline r2; *)
+      assert_equal ~msg:"Success results should be equal" r1 r2
+    | _ -> ()
+  else begin
+    assert_bool "<no message>" (match new_ with New.Parsed _ -> false | _ -> true);
+    assert_bool "<no message>" (match old_ with Orig.Parsed _ -> false | _ -> true);
+  end
 
 let suite =
   "allfuns" >:::
