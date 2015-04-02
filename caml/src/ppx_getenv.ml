@@ -137,7 +137,8 @@ let map_past (past: past) : Parsetree.expression =
                if !cur_pos<str_len && (str.[!cur_pos]='e' || str.[!cur_pos]='E')  then (incr cur_pos; do_skip () );
                let float_str = String.sub str start_pos (!cur_pos - start_pos) in
                print_endline float_str;
-               try [%e evar ans_name] := float_of_string float_str
+               try [%e evar ans_name]   := float_of_string float_str;
+                   [%e evar ans_stream] := (!cur_pos, str)
                with Failure _ -> error:= "Failure float_of_string"
              end
        ]

@@ -11,6 +11,12 @@ module type STREAM = sig
    val skip_ws: t -> t
 end
 
+module type STRING_STREAM = sig
+  type pos = int
+  type t = pos * string
+  include  STREAM with type t := t
+end
+
 type associvity = [ `Lefta | `Righta | `Nona ]
 
 
@@ -33,6 +39,7 @@ module type PARSERS = sig
     val (@~>): 'a parser -> 'b parser -> 'b parser
     (** Return result of left parser *)
     val (<~@): 'a parser -> 'b parser -> 'a parser
+    val (<@>): 'a parser -> 'b parser -> ('a * 'b) parser
     val many_fold: ('init -> 'a -> 'init) -> 'init -> 'a parser -> 'init parser
     val many: 'a parser -> 'a list parser
     val many1: 'a parser -> 'a list parser
@@ -46,6 +53,11 @@ module type PARSERS = sig
     val expr:  ('a parser -> 'a parser) ->
                ([ `Lefta | `Nona | `Righta ] * ('oper parser * ('a -> 'a -> 'a)) list) array ->
                'a parser -> 'a parser
+end
+
+module type PARSERS_EXT = sig
+  include PARSERS
+  val float_number: float parser
 end
 
 
@@ -102,6 +114,11 @@ struct
     | Parsed (ans, (), s') -> (p2 --> (fun _ -> ans)) s'
     | Failed () -> Failed ()
 
+  let (<@>) p1 p2 s =
+    match p1 s with
+    | Parsed (ans1, (), s') -> (p2 --> (fun ans2 -> (ans1,ans2)) ) s'
+    | Failed _ -> Failed ()
+
   let many_fold f init p =
     let rec inner acc s =
       match p s with
@@ -141,6 +158,9 @@ struct
     p >>= helper
 
   let number = many1fold (fun acc x -> acc*10+x) digit
+
+
+
 
   let whitespace : string parser = (look " ") <|> (look "\n") <|> (look "\t")
   let whitespaces = many_fold (fun () _ -> ()) () whitespace
@@ -225,6 +245,32 @@ struct
               _ostap_stream)
     in
     inner 0 id
+
+
+end
+
+module MakeExt(S: STRING_STREAM): PARSERS_EXT with type stream = S.t and type err = unit = struct
+  include Make(S)
+  let float_number init_lexer =
+    let (start_pos, str)  = init_lexer in
+    (* printf "Parsing float from pos %d\n%!" start_pos; *)
+    if S.is_finished init_lexer then Failed ()
+    else begin
+      let str_len = String.length str in
+      let (cur_pos,sign) = if str.[start_pos] = '-' then (ref (start_pos+1),-1) else (ref start_pos,1) in
+      let do_skip () =
+        while !cur_pos < str_len && (let c = int_of_char str.[!cur_pos] in (48<=c)&&(c<=57)) do
+          incr cur_pos done
+      in
+      do_skip ();
+      if !cur_pos<str_len && str.[!cur_pos]='.' then (incr cur_pos; do_skip () );
+      if !cur_pos<str_len && (str.[!cur_pos]='e' || str.[!cur_pos]='E')  then (incr cur_pos; do_skip () );
+      let float_str = String.sub str start_pos (!cur_pos - start_pos) in
+      (* print_endline float_str; *)
+      try let f = float_of_string float_str in
+        Parsed (f,(), (!cur_pos,str) )
+      with Failure _ -> Failed ()
+    end
 
 
 end

@@ -85,6 +85,9 @@ let suite =
   ; "EBNF+">:: (fun _ -> magic_wrap true  (module I.ASDF1) (module I.ASDF1_orig) ~input:"true false false")
   ; "EBNF+">:: (fun _ -> magic_wrap false (module I.ASDF1) (module I.ASDF1_orig) ~input:"false")
   ; "EBNF+">:: (fun _ -> magic_wrap false (module I.ASDF1) (module I.ASDF1_orig) ~input:"")
+
+  ; "Float1">:: (fun _ ->  magic_wrap true (module TstFloat.ASDF1) (module TstFloat.ASDF1_orig) ~input:"1.23 3.33")
+  ; "Float2">:: (fun _ ->  magic_wrap true (module TstFloat.ASDF1) (module TstFloat.ASDF1_orig) ~input:"1.23 -0.12")
   ]
 
 let () = run_test_tt_main suite

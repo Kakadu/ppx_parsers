@@ -93,6 +93,11 @@ struct
       end
     | Failed e -> Failed e
 
+  let (<@>) p1 p2 s =
+    match p1 s with
+    | Parsed (ans1, e1, s') -> (p2 --> (fun ans2 -> (ans1,ans2)) ) s'
+    | Failed err -> Failed err
+
   let many_fold f init p =
     let rec inner acc eacc s =
       match p s with

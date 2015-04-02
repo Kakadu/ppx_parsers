@@ -2,7 +2,7 @@ open Printf
 let log fmt = kprintf (printf "=== %s\n%!") fmt
 
 module type STRING_STREAM = sig
-  type pos
+  type pos = int
   type t = pos * string
   (* type t = u *)
   include Comb.STREAM with type t := t
