@@ -15,6 +15,7 @@ module ASDF1  = struct
   let rec value _stream: json r =
     (wss @~> (obj <|> arr <|>
               (float_number --> (fun f -> Number f))     <|>
+              (string_lit   --> (fun s -> StringLit s))  <|>
               (look "true"  --> (fun _ -> BoolLit true))  <|>
               (look "false" --> (fun _ -> BoolLit false)) <|>
               (look "null" --> (fun _ -> Null))
