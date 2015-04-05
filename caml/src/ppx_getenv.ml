@@ -38,6 +38,7 @@ type past =
   | Whitespace
   | Left  of past*past
   | Right of past*past
+  | Pair  of past*past     (* <@>: 'a parser -> 'b parser -> ('a * 'b) parser *)
   (* | AltList of past list *)
   | Map of past * Parsetree.expression
 
@@ -53,6 +54,7 @@ let rec parse_past root =
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "-->"; _ }; _}, [(_,l); (_,r)]) -> Map   (helper l, r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "@~>"; _ }; _}, [(_,l); (_,r)]) -> Right (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "<~@"; _ }; _}, [(_,l); (_,r)]) -> Left  (helper l, helper r)
+    | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident    "<@>"; _ }; _}, [(_,l); (_,r)]) -> Pair  (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident  "listBy"; _ }; _}, [(_,l); (_,r)]) -> RepSep (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident "list1By"; _ }; _}, [(_,l); (_,r)]) -> RepSep1 (helper l, helper r)
     | Pexp_apply ({pexp_desc=Pexp_ident { txt=Lident  "many"; _ }; _}, [(_,l)]) -> Many (helper l)
@@ -216,6 +218,21 @@ let map_past (past: past) : Parsetree.expression =
                                    [%e evar ans_name  ] := ![%e evar l_ans]))
              end
       ]
+    | Pair (l_ast,r_ast) ->
+      let (l_ans, temp_stream) = make_vars () in
+      let r_ans = make_var () in
+      [%expr let [%p pvar temp_stream] = [%e evar ans_stream] in
+             let [%p pvar l_ans]       = ref (Obj.magic()) in
+             let () = [%e helper l_ans temp_stream l_ast] in
+             if !error="" then
+               let [%p pvar r_ans]     = ref (Obj.magic()) in
+               let () = [%e helper r_ans temp_stream r_ast] in
+               if !error="" then begin
+                 [%e evar ans_stream] := ![%e evar temp_stream];
+                 [%e evar ans_name  ] := (![%e evar l_ans], ![%e evar r_ans] )
+
+               end
+      ]
     | RepSep1(p_ast,sep_ast) ->
       let (sep_ans,temp_stream) = make_vars () in
       let item_ans = make_var () in
@@ -375,7 +392,7 @@ let struct_item_mapper args : Ast_mapper.mapper =
     { {vb with pvb_expr = newbody } with pvb_attributes=remove_parser_attr vb.pvb_attributes }
   in
 
-  let canonize_vb vb =
+  let rec canonize_vb vb =
     (* sometimes we should write awkward code to make it compilable
      *   let rec main stream = ((look "{") @~> (theval) <~@ (look "}")) @@ stream
      *   and theval stream = (look "x") stream
@@ -383,6 +400,7 @@ let struct_item_mapper args : Ast_mapper.mapper =
      * instead of:
      *   let rec main stream = ((look "{") @~> (theval) <~@ (look "}")) @@ stream
      *   and theval = (look "x")
+     *
      *)
     match vb with
     (* TODO: implement case for applying using @@ *)
@@ -397,8 +415,17 @@ let struct_item_mapper args : Ast_mapper.mapper =
                   }
       ; _
       } when stream_var_name=arg_name ->
-      (* log "%s, %s, YESSS" funname arg_name; *)
       { vb with pvb_expr = parser_expr }
+    | { pvb_pat ={ppat_desc=Ppat_var {txt=funname;_}; _}
+      ; pvb_expr={pexp_desc=Pexp_fun (_label1, None, ({ppat_desc=Ppat_var {txt=stream_var_name; _}; _} as _2) ,
+                                      {pexp_desc=Pexp_constraint(e, _typ); _ }
+                                     )
+                 ;
+                 } as _e1
+      ; _
+      } ->
+      (* Also specifing funnction type introduces constraints in the parse tree *)
+      canonize_vb { vb with pvb_expr={_e1 with pexp_desc=Pexp_fun(_label1,None, _2, e) } }
     | _ -> vb
   in
 
