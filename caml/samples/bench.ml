@@ -19,7 +19,7 @@ let () =
     [ Bench.Test.create ~name:"Json1" (fun () ->
           ans := ASDF1.arr stream
         )
-    ; Bench.Test.create ~name:"Json1" (fun () ->
+    ; Bench.Test.create ~name:"Json1_orig" (fun () ->
           ans := ASDF1_orig.arr stream
         )
     ]

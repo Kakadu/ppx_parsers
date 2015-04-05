@@ -9,7 +9,7 @@ TEST_NAMES=a b c d f g h i tstMutalRecursion tstFloat tstStringLit
 TEST_CMOS=$(addsuffix .cmo,$(TEST_NAMES) )
 
 .SUFFIXES: .byte .native
-.PHONY: all test demo bench clean
+.PHONY: all test demo bench run_bench clean
 
 all: demo test bench
 demo: $(OUT)
@@ -57,6 +57,8 @@ $(OUT_BENCH): testLexer.cmx  1/comb.cmxa tstJSON.cmx bench.cmx
 bench.cmx: bench.ml tstJSON.cmx
 	$(OCAMLOPT) $(COMPILER_OPTS) -c $<
 
+run_bench: $(OUT_BENCH)
+	./$(OUT_BENCH) gc cycles
 
 tstJSON.cmx: tstJSON.ml 1/comb.cmxa testLexer.ml
 	$(OCAMLOPT) $(COMPILER_OPTS) $(WITH_PPX) -c $<
