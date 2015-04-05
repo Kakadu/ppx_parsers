@@ -102,15 +102,26 @@ let map_expr_body mapper expr =
       ans
     end *)
 
+module type VALUE_HELPER = sig
+  type t
+  val create: unit -> t
+  val declare_globals: t -> Parsetree.expression -> Parsetree.expression
+  val make_vars: t -> string*string
+  val make_var:  t -> string
+end
+
+module ValueHelperInline : VALUE_HELPER = struct
+  type t = { mutable glob:int; mutable locl: int }
+  let create () = { glob=0; locl=0 }
+  let declare_globals t x = x
+  let make_vars _ = "",""
+  let make_var _ = ""
+end
+
 (* Ast evaluation and unfolding parser-combinators into recursive descent is there *)
-let map_past (past: past) : Parsetree.expression =
+let map_past (module VH: VALUE_HELPER) (past: past) : Parsetree.expression =
   let open Ast_helper in
   let open Ast_convenience in
-  (* let decl_ref ~name valexpr cont = *)
-  (*   Exp.(let_ Nonrecursive *)
-  (*             [Vb.mk (Pat.var @@ Location.mknoloc name) (apply (ident @@ lid "ref") [("", valexpr)]) ] *)
-  (*             cont) *)
-  (* in *)
 
   let (make_var, make_vars) =
     let counter = ref 0 in
@@ -382,13 +393,8 @@ let struct_item_parser_eraser _args : Ast_mapper.mapper =
 let struct_item_mapper args : Ast_mapper.mapper =
   let map_value_binding mapper (vb: value_binding) =
     assert (is_good_value_binding vb);
-    (* let name = *)
-    (*   match vb.pvb_pat.ppat_desc with *)
-    (*   | Ppat_var ({txt; _}) -> txt *)
-    (*   | _ -> assert false *)
-    (* in *)
     (* log "Found a value binding '%s'" name; *)
-    let newbody = map_past (parse_past vb.pvb_expr) in
+    let newbody = map_past (module ValueHelperInline: VALUE_HELPER) (parse_past vb.pvb_expr) in
     { {vb with pvb_expr = newbody } with pvb_attributes=remove_parser_attr vb.pvb_attributes }
   in
 
