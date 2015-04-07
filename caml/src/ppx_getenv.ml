@@ -105,17 +105,28 @@ let map_expr_body mapper expr =
 module type VALUE_HELPER = sig
   type t
   val create: unit -> t
-  val declare_globals: t -> Parsetree.expression -> Parsetree.expression
   val make_vars: t -> string*string
   val make_var:  t -> string
+
+  open Parsetree
+  val declare_globals: t -> expression -> expression
+  val init_var: string -> expression -> expression -> expression
 end
 
 module ValueHelperInline : VALUE_HELPER = struct
-  type t = { mutable glob:int; mutable locl: int }
-  let create () = { glob=0; locl=0 }
-  let declare_globals t x = x
-  let make_vars _ = "",""
-  let make_var _ = ""
+  type t = { mutable glob_ans:int; mutable glob_stream:int; mutable locl: int }
+  let create () = { glob_ans=0; glob_stream=0; locl=0 }
+  let declare_globals _ e = e
+  let make_vars r =
+    r.glob_ans    <- r.glob_ans+1;
+    r.glob_stream <- r.glob_stream+1;
+    (sprintf "_ans%d" r.glob_ans, sprintf "_stream%d" r.glob_stream)
+  let make_var  r = r.glob_ans   <-r.glob_ans+1;     sprintf "_ans%d"    r.glob_ans
+  let make_svar r = r.glob_stream<-r.glob_stream+1;  sprintf "_stream%d" r.glob_stream
+  let make_local r = r.locl <- r.locl+1; sprintf "_x%d" r.locl
+  let init_var name val_expr cont =
+    [%expr let [%p Ast_convenience.pvar name] = [%e val_expr] in [%e cont]]
+
 end
 
 (* Ast evaluation and unfolding parser-combinators into recursive descent is there *)
@@ -123,12 +134,13 @@ let map_past (module VH: VALUE_HELPER) (past: past) : Parsetree.expression =
   let open Ast_helper in
   let open Ast_convenience in
 
-  let (make_var, make_vars) =
-    let counter = ref 0 in
-    ( (fun () -> incr counter; sprintf "_ans%d" !counter)
-    , (fun () -> incr counter; (sprintf "_ans%d" !counter, sprintf "_stream%d" !counter) )
-    )
-  in
+  (* let (make_var, make_vars) = *)
+  (*   let counter = ref 0 in *)
+  (*   ( (fun () -> incr counter; sprintf "_ans%d" !counter) *)
+  (*   , (fun () -> incr counter; (sprintf "_ans%d" !counter, sprintf "_stream%d" !counter) ) *)
+  (*   ) *)
+  (* in *)
+  let val_helper = VH.create () in
   let rec helper ans_name ans_stream = function
     | OExpr oexpr ->
       [%expr match [%e oexpr]  ![%e evar ans_stream] with
@@ -179,9 +191,9 @@ let map_past (module VH: VALUE_HELPER) (past: past) : Parsetree.expression =
     | Look str   ->
        (* We generate some code which skip names*)
        (* TODO: remove this skipping of whitespace, we will write that explicilty *)
-       let temp_stream = make_var () in
-       [%expr let [%p pvar temp_stream] = Lexer.skip_ws ! [%e evar ans_stream] in
-              match Lexer.look [%e evar temp_stream] [%e Ast_convenience.str str] with
+       let temp_stream = VH.make_var val_helper in
+       VH.init_var temp_stream [%expr Lexer.skip_ws ! [%e evar ans_stream]] @@
+       [%expr match Lexer.look [%e evar temp_stream] [%e Ast_convenience.str str] with
               | Some new_stream -> [%e evar ans_name]   := [%e Ast_convenience.str str];
                                    [%e evar ans_stream] := new_stream
               | None ->  error := Printf.sprintf "can't parse '%s'" [%e Exp.constant@@Const_string (str,None)]
@@ -191,9 +203,9 @@ let map_past (module VH: VALUE_HELPER) (past: past) : Parsetree.expression =
       [%expr [%e evar ans_name] := (); [%e evar ans_stream] := Lexer.skip_ws ! [%e evar ans_stream] ]
 
     | Alt (l,r) ->
-       let (_,temp_stream) = make_vars () in
-       [%expr let [%p pvar temp_stream ] = [%e evar ans_stream] in
-              let () = [%e helper ans_name temp_stream l] in
+       let (_,temp_stream) = VH.make_vars val_helper in
+       VH.init_var temp_stream (evar ans_stream) @@
+       [%expr let () = [%e helper ans_name temp_stream l] in
               if !error<>"" then begin
                   [%e evar temp_stream] := ! [%e evar ans_stream];
                   error := "";
@@ -204,55 +216,62 @@ let map_past (module VH: VALUE_HELPER) (past: past) : Parsetree.expression =
                 end
        ]
     | Right (l_ast,r_ast) ->
-      let (l_ans, temp_stream) = make_vars () in
-      let r_ans = make_var () in
-      [%expr let [%p pvar temp_stream] = [%e evar ans_stream] in
-             let [%p pvar l_ans]       = ref (Obj.magic()) in
-             let () = [%e helper l_ans temp_stream l_ast] in
+      let (l_ans, temp_stream) = VH.make_vars val_helper in
+      let r_ans = VH.make_var val_helper in
+      VH.init_var temp_stream (evar ans_stream)         @@
+      VH.init_var l_ans       [%expr ref (Obj.magic())] @@
+      [%expr let () = [%e helper l_ans temp_stream l_ast] in
              if !error="" then begin
-               let [%p pvar r_ans]     = ref (Obj.magic()) in
-               let () = [%e helper r_ans temp_stream r_ast] in
-               (if !error="" then ([%e evar ans_stream] := ![%e evar temp_stream];
-                                   [%e evar ans_name  ] := ![%e evar r_ans]))
+               [%e VH.init_var r_ans [%expr ref (Obj.magic())] @@
+                   [%expr let () = [%e helper r_ans temp_stream r_ast] in
+                          (if !error="" then ([%e evar ans_stream] := ![%e evar temp_stream];
+                                              [%e evar ans_name  ] := ![%e evar r_ans]))
+                   ]
+               ]
              end
       ]
     | Left  (l_ast,r_ast) ->
-      let (l_ans, temp_stream) = make_vars () in
-      let r_ans = make_var () in
-      [%expr let [%p pvar temp_stream] = [%e evar ans_stream] in
-             let [%p pvar l_ans]       = ref (Obj.magic()) in
-             let () = [%e helper l_ans temp_stream l_ast] in
+      let (l_ans, temp_stream) = VH.make_vars val_helper in
+      let r_ans = VH.make_var val_helper in
+      VH.init_var temp_stream (evar ans_stream)         @@
+      VH.init_var l_ans       [%expr ref (Obj.magic())] @@
+      [%expr let () = [%e helper l_ans temp_stream l_ast] in
              if !error="" then begin
-               let [%p pvar r_ans]     = ref (Obj.magic()) in
-               let () = [%e helper r_ans temp_stream r_ast] in
-               (if !error="" then ([%e evar ans_stream] := ![%e evar temp_stream];
-                                   [%e evar ans_name  ] := ![%e evar l_ans]))
+               [%e VH.init_var r_ans [%expr ref (Obj.magic())] @@
+                   [%expr let () = [%e helper r_ans temp_stream r_ast] in
+                          (if !error="" then ([%e evar ans_stream] := ![%e evar temp_stream];
+                                              [%e evar ans_name  ] := ![%e evar l_ans]))
+                   ]
+               ]
              end
       ]
     | Pair (l_ast,r_ast) ->
-      let (l_ans, temp_stream) = make_vars () in
-      let r_ans = make_var () in
-      [%expr let [%p pvar temp_stream] = [%e evar ans_stream] in
-             let [%p pvar l_ans]       = ref (Obj.magic()) in
-             let () = [%e helper l_ans temp_stream l_ast] in
+      let (l_ans, temp_stream) = VH.make_vars val_helper in
+      let r_ans = VH.make_var val_helper in
+      VH.init_var temp_stream (evar ans_stream)         @@
+      VH.init_var l_ans       [%expr ref (Obj.magic())] @@
+      [%expr let () = [%e helper l_ans temp_stream l_ast] in
              if !error="" then
-               let [%p pvar r_ans]     = ref (Obj.magic()) in
-               let () = [%e helper r_ans temp_stream r_ast] in
-               if !error="" then begin
-                 [%e evar ans_stream] := ![%e evar temp_stream];
-                 [%e evar ans_name  ] := (![%e evar l_ans], ![%e evar r_ans] )
-
-               end
+               [%e VH.init_var r_ans [%expr ref (Obj.magic())] @@
+                   [%expr let () = [%e helper r_ans temp_stream r_ast] in
+                          if !error="" then begin
+                              [%e evar ans_stream] := ![%e evar temp_stream];
+                              [%e evar ans_name  ] := (![%e evar l_ans], ![%e evar r_ans])
+                          end
+                   ]
+               ]
       ]
+
     | RepSep1(p_ast,sep_ast) ->
-      let (sep_ans,temp_stream) = make_vars () in
-      let item_ans = make_var () in
-      let item_list = make_var () ^ "xs" in
-      [%expr let [%p pvar temp_stream] = [%e evar ans_stream] in
-             let [%p pvar sep_ans]   = ref (Obj.magic()) in
-             let [%p pvar item_ans]  = ref (Obj.magic()) in
-             let [%p pvar item_list] = ref (Obj.magic()) in
-             let () = [%e helper item_ans temp_stream p_ast] in
+      let (sep_ans,temp_stream) = VH.make_vars val_helper in
+      let item_ans = VH.make_var val_helper in
+      (* let item_list = make_var () ^ "xs" in *)
+      let item_list = VH.make_var val_helper in
+      VH.init_var temp_stream (evar ans_stream)         @@
+      VH.init_var sep_ans     [%expr ref (Obj.magic())] @@
+      VH.init_var item_ans    [%expr ref (Obj.magic())] @@
+      VH.init_var item_list   [%expr ref (Obj.magic())] @@
+      [%expr let () = [%e helper item_ans temp_stream p_ast] in
              if !error="" then begin
                [%e evar item_list] := [ ! [%e evar item_ans] ];
                let rec loop () =
