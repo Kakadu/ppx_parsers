@@ -10,6 +10,7 @@ if [ $? != 0 ]; then
 fi
 
 set -xe
-ocamlfind ppx_tools/rewriter ../_build/src/ppx_getenv.native $TEST_NAME.ml
+ocamlfind ppx_tools/rewriter "../_build/src/ppx_getenv.native " $TEST_NAME.ml
+#ocamlfind ppx_tools/rewriter "../_build/src/ppx_getenv.native -inline-decls" $TEST_NAME.ml
 #set +xe
 exit $?

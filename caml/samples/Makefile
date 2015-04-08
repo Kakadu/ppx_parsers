@@ -5,7 +5,7 @@ WITH_PPX=-ppx ../_build/src/ppx_getenv.native
 OUT=demo.byte
 OUT_TEST=test.byte
 OUT_BENCH=bench.native
-TEST_NAMES=a b c d f g h i tstMutalRecursion tstFloat tstStringLit
+TEST_NAMES=a b c d f g h i tstMutalRecursion tstFloat tstStringLit tstAlt3
 TEST_CMOS=$(addsuffix .cmo,$(TEST_NAMES) )
 
 .SUFFIXES: .byte .native
