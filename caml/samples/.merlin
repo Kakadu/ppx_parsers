@@ -5,3 +5,4 @@ B 1
 PKG oUnit
 PKG extlib
 PKG core_bench
+PKG core
