@@ -8,7 +8,6 @@ module ASDF1  = struct
     --> (fun (xs: string list) -> Printf.sprintf "[%s]" (String.concat ";" xs) )
       [@@parser]
 
-  (* TODO: think why if I add type to `main' everything is broken *)
 
   (* let main = *)
   (*   ( (listBy ((look "true") <|> (look "false")) (look ",")) ) *)

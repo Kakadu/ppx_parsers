@@ -59,6 +59,10 @@ let suite =
 
   ; "alternative1">:: (fun _ctx ->  magic_wrap ~input:"true"  true (module C.ASDF1) (module C.ASDF1_orig) )
   ; "alternative2">:: (fun _ctx ->  magic_wrap ~input:"false" true (module C.ASDF1) (module C.ASDF1_orig) )
+  ; "alternative3">:: (fun _ctx ->  magic_wrap ~input:"true," true (module TstAlt3.ASDF1) (module TstAlt3.ASDF1_orig) )
+
+  ; "EBNF*">:: (fun _ ->  magic_wrap true (module D.ASDF1) (module D.ASDF1_orig) ~input:"true true true" )
+  ; "EBNF*">:: (fun _ ->  magic_wrap true (module D.ASDF1) (module D.ASDF1_orig) ~input:"" )
 
 
   ; "Oexpr simple">:: (fun _ ->  magic_wrap true (module F.ASDF1) (module F.ASDF1_orig) ~input:"{x}" )
@@ -71,9 +75,6 @@ let suite =
 
   ; "MutalRecursion1">::(fun _ -> magic_wrap true (module TstMutalRecursion.ASDF1) (module TstMutalRecursion.ASDF1_orig)
                             ~input:"{[{};{}];[];[{[]}]}")
-
-  ; "EBNF*">:: (fun _ ->  magic_wrap true (module D.ASDF1) (module D.ASDF1_orig) ~input:"true true true" )
-  ; "EBNF*">:: (fun _ ->  magic_wrap true (module D.ASDF1) (module D.ASDF1_orig) ~input:"" )
 
   ; "EBNF+">:: (fun _ -> magic_wrap true  (module I.ASDF1) (module I.ASDF1_orig) ~input:"true false false")
   ; "EBNF+">:: (fun _ -> magic_wrap false (module I.ASDF1) (module I.ASDF1_orig) ~input:"false")
