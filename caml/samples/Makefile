@@ -64,6 +64,6 @@ tstJSON.cmx: tstJSON.ml 1/comb.cmxa testLexer.ml
 	$(OCAMLOPT) $(COMPILER_OPTS) $(WITH_PPX) -c $<
 
 clean:
-	$(RM) *.cm[iox] *.o $(OUT)
+	$(RM) *.cm[iox] *.o $(OUT) $(OUT_TEST) $(OUT_BENCH)
 
 # TODO: when  we change ppx_...native files are not recompiled. FIX it!
